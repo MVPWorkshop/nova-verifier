@@ -5,52 +5,9 @@ edition = "2021"
 
 [dependencies]
 # ! Nova dependencies
-# nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "no_std", default-features = false }
-# ! GOOD
-ff = { version = "0.13.0", features = ["derive"] }
-digest = { version = "0.10", default-features = false }
-sha3 = { version = "0.10", default-features = false }
-rand_core = { version = "0.6", default-features = false }
-rand_chacha = { version = "0.3", default-features = false }
-subtle = { version = "2.6.1", default-features = false }
-pasta_curves = { version = "0.5", features = [
-    "repr-c",
-    "serde",
-], default-features = false }
-generic-array = { version = "1.1", default-features = false }
-num-bigint = { version = "0.4.6", features = [
-    "serde",
-    "rand",
-], default-features = false }
-num-traits = { version = "0.2.19", default-features = false }
-num-integer = { version = "0.1.46", default-features = false }
-serde = { version = "1.0.216", features = ["derive"], default-features = false }
-bitvec = { version = "1.0", default-features = false }
-byteorder = { version = "1.4.3", default-features = false }
-thiserror = { version = "2.0", default-features = false }
-group = { version = "0.13.0", default-features = false }
-itertools = { version = "0.13.0", default-features = false }
-hashbrown = { version = "0.15.2", features = [
-    "alloc",
-], default-features = false }
-
-# once_cell = { version = "1.18.0", default-features = false } # ! This will fail in Nova lib implementation, because its missing some features !!!
-
-
-# ! PROBLEMATIC packages
-[std]
-# ! Rayon seems to have only 3 errors, maybe put it conditionally as STD feature
-rayon = { version = "1.10", default-features = false }
-
-# ! When remove features and compile on our target, gets error for num-traits, but we already pass compile check with num-traits. Maybe fork this lib and use num-traits with default-features FALSE to compile it 
-# ! Num-traits 37 err + serde 6695
-halo2curves = { version = "0.6.0", default-features = false } # TODO Try arkworks-rs ??? curve25519-dalek ???
-
-# ! Used only for testing ???
-# ! Serde errors 
-bincode = { version = "1.3", default-features = false } # ! postcard 
-
-
-[features]
-default = ["std"]
-std = []
+nova-snark = { git = "https://github.com/MVPWorkshop/Nova", default-features = false }
+ff = "*"
+serde_json = "*"
+postcard = { version = "*", default-features = false, features = ["alloc"] }
+thiserror = "*"
+pasta_curves = "*"
