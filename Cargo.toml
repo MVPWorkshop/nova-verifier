@@ -1,0 +1,8 @@
+[package]
+name = "nova-verifier"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# ! Nova dependencies
+# nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "no_std", default-features = false }
