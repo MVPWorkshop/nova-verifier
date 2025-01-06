@@ -22,11 +22,11 @@ where
         &compressed_snark_bytes,
     )?;
 
-    let vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
+    let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
     compressed_snark
         .verify(
-            &vk,
+            &mut vk,
             // ! NUMBER OF STEPS CAN NOT BE 0 !!!
             3,
             &[<E1 as Engine>::Scalar::ONE],

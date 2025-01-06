@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # ! Nova dependencies
-nova-snark = { git = "https://github.com/MVPWorkshop/Nova", default-features = false }
+nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "paralelization" }
 ff = "*"
 serde_json = "*"
 postcard = { version = "*", default-features = false, features = ["alloc"] }
