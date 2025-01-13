@@ -1,3 +1,6 @@
+extern crate alloc;
+
+use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 
 use thiserror::Error;

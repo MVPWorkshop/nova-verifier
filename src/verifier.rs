@@ -1,8 +1,11 @@
+extern crate alloc;
+
 use nova_snark::{
     provider::{PallasEngine, VestaEngine},
     traits::Engine,
 };
 
+use alloc::vec::Vec;
 use ff::Field;
 use ff::PrimeField;
 

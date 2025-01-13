@@ -1,5 +1,9 @@
+#[cfg(test)]
 mod tests {
-    use std::{fs, marker::PhantomData};
+
+    extern crate std;
+
+    use std::{fs, marker::PhantomData, vec, vec::Vec};
 
     use nova_snark::{
         frontend::{num::AllocatedNum, ConstraintSystem, SynthesisError},
