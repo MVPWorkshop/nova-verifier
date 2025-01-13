@@ -27,6 +27,7 @@ where
 
     let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
+    // ! Handle unwrap better with errors
     compressed_snark
         .verify(
             &mut vk,
