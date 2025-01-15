@@ -3,6 +3,9 @@ extern crate alloc;
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 
+#[cfg(not(feature = "std"))]
+use core::error::*;
+
 use thiserror::Error;
 
 use nova_snark::{

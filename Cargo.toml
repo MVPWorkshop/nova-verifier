@@ -13,3 +13,7 @@ pasta_curves = "*"
 
 [dev-dependencies]
 serde_json = "*"
+
+[features]
+default = ["std"]
+std = []
