@@ -27,7 +27,7 @@ where
 
     let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
-    // ! Handle unwrap better with errors
+    // ! TODO -> map_err with Nova error !!!
     compressed_snark
         .verify(
             &mut vk,
@@ -36,6 +36,6 @@ where
             &[<E1 as Engine>::Scalar::ONE],
             &[<E2 as Engine>::Scalar::ZERO],
         )
-        .unwrap();
+        .map_err(DeserializeError::from)?;
     Ok(())
 }

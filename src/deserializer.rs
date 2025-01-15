@@ -6,6 +6,7 @@ use core::marker::PhantomData;
 use thiserror::Error;
 
 use nova_snark::{
+    errors::NovaError,
     frontend::{num::AllocatedNum, ConstraintSystem, SynthesisError},
     provider::{ipa_pc::EvaluationEngine, PallasEngine, VestaEngine},
     traits::{
@@ -73,6 +74,9 @@ impl<F: PrimeField> CubicCircuit<F> {
 
 #[derive(Error, Debug)]
 pub enum DeserializeError {
+    // ! TODO -> move this in errors.rs and make it work properly
+    #[error(transparent)]
+    NovaError(#[from] NovaError),
     #[error("Deserialization of proof failed")]
     InvalidProof,
     #[error("Deserialization of public inputs failed")]
