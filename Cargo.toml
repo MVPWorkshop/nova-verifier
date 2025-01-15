@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # ! Nova dependencies
-nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "debug", default-features = false }
+nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "no_std", default-features = false }
 ff = "*"
 postcard = { version = "*", default-features = false, features = ["alloc"] }
 thiserror = { version = "*", default-features = false }
