@@ -3,9 +3,7 @@ extern crate alloc;
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 
-#[cfg(not(feature = "std"))]
 use core::error;
-#[cfg(not(feature = "std"))]
 use core::error::Error;
 
 use thiserror::Error;
