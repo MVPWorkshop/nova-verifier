@@ -3,6 +3,9 @@ extern crate alloc;
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 
+use core::error;
+use core::error::Error;
+
 use thiserror::Error;
 
 use nova_snark::{
@@ -75,8 +78,6 @@ impl<F: PrimeField> CubicCircuit<F> {
 #[derive(Error, Debug)]
 pub enum DeserializeError {
     // ! TODO -> move this in errors.rs and make it work properly
-    #[error(transparent)]
-    NovaError(#[from] NovaError),
     #[error("Deserialization of proof failed")]
     InvalidProof,
     #[error("Deserialization of public inputs failed")]

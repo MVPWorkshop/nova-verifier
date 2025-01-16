@@ -8,8 +8,12 @@ edition = "2021"
 nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "no_std", default-features = false }
 ff = "*"
 postcard = { version = "*", default-features = false, features = ["alloc"] }
-thiserror = { version = "*", default-features = false }
+thiserror = { version = "2.0.9", default-features = false }
 pasta_curves = "*"
 
 [dev-dependencies]
 serde_json = "*"
+
+[features]
+default = ["std"]
+std = []
