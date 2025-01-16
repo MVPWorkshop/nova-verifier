@@ -36,6 +36,6 @@ where
             &[<E1 as Engine>::Scalar::ONE],
             &[<E2 as Engine>::Scalar::ZERO],
         )
-        .map_err(DeserializeError::from)?;
+        .unwrap();
     Ok(())
 }
