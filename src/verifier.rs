@@ -13,6 +13,10 @@ use crate::deserializer::{deserialize_compressed_snark, deserialize_vk, Deserial
 
 type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
+pub fn verify(vk_bytes: &Vec<u8>, snark_bytes: &Vec<u8>) -> Result<(), DeserializeError> {
+    verify_compressed_snark::<PallasEngine, VestaEngine>(vk_bytes, snark_bytes)
+}
+
 pub fn verify_compressed_snark<E1, E2>(
     vk_bytes: &Vec<u8>,
     compressed_snark_bytes: &Vec<u8>,
