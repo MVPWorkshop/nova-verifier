@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod deserializer;
+pub mod deserializer;
 mod tests;
-mod verifier;
+pub mod verifier;
