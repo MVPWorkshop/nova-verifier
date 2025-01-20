@@ -7,7 +7,7 @@ use nova_snark::{
 
 use alloc::vec::Vec;
 use ff::Field;
-use ff::PrimeField;
+// use ff::PrimeField;
 
 use crate::deserializer::{deserialize_compressed_snark, deserialize_vk, DeserializeError};
 
