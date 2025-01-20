@@ -7,7 +7,7 @@ mod tests {
 
     use nova_snark::{
         frontend::{num::AllocatedNum, ConstraintSystem, SynthesisError},
-        provider::{ipa_pc::EvaluationEngine, PallasEngine, VestaEngine},
+        provider::{PallasEngine, VestaEngine},
         traits::{
             circuit::{StepCircuit, TrivialCircuit},
             evaluation::EvaluationEngineTrait,
@@ -18,15 +18,12 @@ mod tests {
 
     use ff::PrimeField;
 
-    use crate::{
-        deserializer,
-        verifier::{self, verify_compressed_snark},
-    };
+    use crate::{deserializer, verifier::verify_compressed_snark};
 
     type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
-    type EEPrime<E> = nova_snark::provider::hyperkzg::EvaluationEngine<E>;
+    // type EEPrime<E> = nova_snark::provider::hyperkzg::EvaluationEngine<E>;
     type S<E, EE> = nova_snark::spartan::snark::RelaxedR1CSSNARK<E, EE>;
-    type SPrime<E, EE> = nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
+    // type SPrime<E, EE> = nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
 
     #[derive(Clone, Debug, Default)]
     struct CubicCircuit<F: PrimeField> {
@@ -70,17 +67,19 @@ mod tests {
         }
     }
 
-    impl<F: PrimeField> CubicCircuit<F> {
-        fn output(&self, z: &[F]) -> Vec<F> {
-            vec![z[0] * z[0] * z[0] + z[0] + F::from(5u64)]
-        }
-    }
+    // impl<F: PrimeField> CubicCircuit<F> {
+    //     fn output(&self, z: &[F]) -> Vec<F> {
+    //         vec![z[0] * z[0] * z[0] + z[0] + F::from(5u64)]
+    //     }
+    // }
 
     #[test]
     fn test() {
-        let compressed_snark = handle_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
-        let vk = handle_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
-        verify_compressed_snark::<PallasEngine, VestaEngine>(&vk, &compressed_snark).unwrap();
+        let compressed_snark_bytes =
+            handle_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
+        let vk_bytes = handle_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
+        verify_compressed_snark::<PallasEngine, VestaEngine>(&vk_bytes, &compressed_snark_bytes)
+            .unwrap();
     }
 
     // ! Helper functions
@@ -108,7 +107,7 @@ mod tests {
 
         // ! Serialize into Bytes
         let bytes_vk = postcard::to_allocvec(&json_data_vk).unwrap();
-        // println!("{:?}", bytes_vk);
+        println!("{:?}", bytes_vk.len());
 
         // ! Write bytes to file
         let output_path_vk = "./src/resources/bin/vk.bin";
@@ -118,7 +117,7 @@ mod tests {
 
         // ! Just a check that it is in right format and it can be deserialized
         let deserialized_value_vk =
-            deserializer::deserialize_vk::<E1, E2, EE1, EE2>(&bytes_from_file_vk);
+            deserializer::deserialize_vk::<E1, E2, EE1, EE2>(&bytes_from_file_vk).unwrap();
 
         bytes_from_file_vk
     }
@@ -162,7 +161,8 @@ mod tests {
         let deserialized_value_compressed_snark =
             deserializer::deserialize_compressed_snark::<E1, E2, EE1, EE2>(
                 &bytes_from_file_compressed_snark,
-            );
+            )
+            .unwrap();
 
         bytes_from_file_compressed_snark
     }

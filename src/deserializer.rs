@@ -3,29 +3,30 @@ extern crate alloc;
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 
-use core::error;
-use core::error::Error;
+// use core::error;
+// use core::error::Error;
 
 use thiserror::Error;
 
 use nova_snark::{
-    errors::NovaError,
+    // errors::NovaError,
     frontend::{num::AllocatedNum, ConstraintSystem, SynthesisError},
-    provider::{ipa_pc::EvaluationEngine, PallasEngine, VestaEngine},
+    // provider::{ipa_pc::EvaluationEngine, PallasEngine, VestaEngine},
     traits::{
         circuit::{StepCircuit, TrivialCircuit},
         evaluation::EvaluationEngineTrait,
         Engine,
     },
-    CompressedSNARK, VerifierKey,
+    CompressedSNARK,
+    VerifierKey,
 };
 
 use ff::PrimeField;
 
-type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
-type EEPrime<E> = nova_snark::provider::hyperkzg::EvaluationEngine<E>;
+// type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+// type EEPrime<E> = nova_snark::provider::hyperkzg::EvaluationEngine<E>;
 type S<E, EE> = nova_snark::spartan::snark::RelaxedR1CSSNARK<E, EE>;
-type SPrime<E, EE> = nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
+// type SPrime<E, EE> = nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
 
 #[derive(Clone, Debug, Default)]
 pub struct CubicCircuit<F: PrimeField> {
@@ -69,11 +70,11 @@ impl<F: PrimeField> StepCircuit<F> for CubicCircuit<F> {
     }
 }
 
-impl<F: PrimeField> CubicCircuit<F> {
-    fn output(&self, z: &[F]) -> Vec<F> {
-        vec![z[0] * z[0] * z[0] + z[0] + F::from(5u64)]
-    }
-}
+// impl<F: PrimeField> CubicCircuit<F> {
+//     fn output(&self, z: &[F]) -> Vec<F> {
+//         vec![z[0] * z[0] * z[0] + z[0] + F::from(5u64)]
+//     }
+// }
 
 #[derive(Error, Debug)]
 pub enum DeserializeError {
