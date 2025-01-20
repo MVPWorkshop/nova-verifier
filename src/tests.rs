@@ -107,7 +107,7 @@ mod tests {
 
         // ! Serialize into Bytes
         let bytes_vk = postcard::to_allocvec(&json_data_vk).unwrap();
-        println!("{:?}", bytes_vk.len());
+        // println!("{:?}", bytes_vk.len());
 
         // ! Write bytes to file
         let output_path_vk = "./src/resources/bin/vk.bin";
