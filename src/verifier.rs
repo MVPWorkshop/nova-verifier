@@ -23,9 +23,9 @@ pub enum CurveName {
 #[derive(Debug, Deserialize)]
 pub struct Pubs {
     pub first_curve: CurveName,
-    num_of_steps: u32,
-    num1: u32,
-    num2: u32,
+    pub num_of_steps: u32,
+    pub num1: u32,
+    pub num2: u32,
 }
 
 pub fn verify_nova(
