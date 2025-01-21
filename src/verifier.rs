@@ -1,26 +1,26 @@
 extern crate alloc;
 
+use alloc::vec::Vec;
+use ff::Field;
 use nova_snark::{
     provider::{PallasEngine, VestaEngine},
     traits::Engine,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use alloc::vec::Vec;
-use ff::Field;
-// use ff::PrimeField;
-
-use crate::deserializer::{deserialize_compressed_snark, deserialize_vk, DeserializeError};
+use crate::deserializer::{
+    deserialize_compressed_snark, deserialize_pubs, deserialize_vk, DeserializeError,
+};
 
 type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum CurveName {
     Pallas,
     Vesta,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Pubs {
     pub first_curve: CurveName,
     pub num_of_steps: u32,
@@ -31,10 +31,11 @@ pub struct Pubs {
 pub fn verify_nova(
     vk_bytes: &Vec<u8>,
     snark_bytes: &Vec<u8>,
-    pubs: Pubs,
+    pubs_bytes: &Vec<u8>,
 ) -> Result<(), DeserializeError> {
     // ! TODO -> Remove unwraps in all code !!!
     // ! TODO -> Pass num_of_steps and other 2 nums
+    let pubs = deserialize_pubs(&pubs_bytes)?;
     match pubs.first_curve {
         CurveName::Pallas => verify_pallas_vesta(vk_bytes, snark_bytes),
         CurveName::Vesta => verify_vesta_pallas(vk_bytes, snark_bytes),

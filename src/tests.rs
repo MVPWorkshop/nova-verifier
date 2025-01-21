@@ -16,7 +16,7 @@ mod tests {
     use pasta_curves::{Fp, Fq};
 
     use crate::{
-        deserializer,
+        deserializer::{self, deserialize_pubs},
         verifier::{verify_nova, CurveName, Pubs},
     };
 
@@ -27,7 +27,8 @@ mod tests {
     fn test() {
         let vk_bytes;
         let snark_bytes;
-        let pubs = handle_pubs();
+        let pubs_bytes = handle_pubs();
+        let pubs = deserialize_pubs(&pubs_bytes).unwrap();
 
         match pubs.first_curve {
             CurveName::Pallas => {
@@ -67,18 +68,34 @@ mod tests {
                 >();
             }
         }
-        verify_nova(&vk_bytes, &snark_bytes, pubs).unwrap();
+        verify_nova(&vk_bytes, &snark_bytes, &pubs_bytes).unwrap();
     }
 
-    fn handle_pubs() -> Pubs {
+    fn handle_pubs() -> Vec<u8> {
         let json_path_pubs = "./src/resources/json/pubs.json";
 
         let json_string_pubs =
             fs::read_to_string(json_path_pubs).expect("Failed to read JSON file");
 
-        // ! From string into CompressedSTARK
+        // ! From string into Pubs
+        let json_data_pubs: Pubs =
+            serde_json::from_str(&json_string_pubs).expect("Failed to parse JSON");
 
-        serde_json::from_str(&json_string_pubs).expect("Failed to parse JSON")
+        // ! Serialize into Bytes
+        let bytes_pubs = postcard::to_allocvec(&json_data_pubs).unwrap();
+        // println!("{:?}", bytes_pubs.len());
+
+        // ! Write bytes to file
+        let output_path_pubs = "./src/resources/bin/pubs.bin";
+        fs::write(output_path_pubs, bytes_pubs).expect("Failed to write binary file");
+        // ! Read bytes from file
+        let bytes_from_file_pubs = fs::read(output_path_pubs).unwrap();
+
+        // ! Just a check that it is in right format and it can be deserialized
+        let _deserialized_value_pubs =
+            deserializer::deserialize_pubs(&bytes_from_file_pubs).unwrap();
+
+        bytes_from_file_pubs
     }
 
     // ! Helper functions
