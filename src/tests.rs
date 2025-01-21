@@ -2,91 +2,92 @@
 mod tests {
 
     extern crate std;
-
-    use std::{fs, marker::PhantomData, vec, vec::Vec};
+    use std::{fs, vec::Vec};
 
     use nova_snark::{
-        frontend::{num::AllocatedNum, ConstraintSystem, SynthesisError},
         provider::{PallasEngine, VestaEngine},
         traits::{
-            circuit::{StepCircuit, TrivialCircuit},
+            circuit::{GenericCircuit, StepCircuit},
             evaluation::EvaluationEngineTrait,
             Engine,
         },
         CompressedSNARK, VerifierKey,
     };
+    use pasta_curves::{Fp, Fq};
 
-    use ff::PrimeField;
-
-    use crate::{deserializer, verifier::verify_compressed_snark};
+    use crate::{
+        deserializer,
+        verifier::{verify_nova, CurveName, Pubs},
+    };
 
     type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
-    // type EEPrime<E> = nova_snark::provider::hyperkzg::EvaluationEngine<E>;
     type S<E, EE> = nova_snark::spartan::snark::RelaxedR1CSSNARK<E, EE>;
-    // type SPrime<E, EE> = nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
-
-    #[derive(Clone, Debug, Default)]
-    struct CubicCircuit<F: PrimeField> {
-        _p: PhantomData<F>,
-    }
-
-    impl<F: PrimeField> StepCircuit<F> for CubicCircuit<F> {
-        fn arity(&self) -> usize {
-            1
-        }
-
-        fn synthesize<CS: ConstraintSystem<F>>(
-            &self,
-            cs: &mut CS,
-            z: &[AllocatedNum<F>],
-        ) -> Result<Vec<AllocatedNum<F>>, SynthesisError> {
-            // Consider a cubic equation: `x^3 + x + 5 = y`, where `x` and `y` are respectively the input and output.
-            let x = &z[0];
-            let x_sq = x.square(cs.namespace(|| "x_sq"))?;
-            let x_cu = x_sq.mul(cs.namespace(|| "x_cu"), x)?;
-            let y = AllocatedNum::alloc(cs.namespace(|| "y"), || {
-                Ok(x_cu.get_value().unwrap() + x.get_value().unwrap() + F::from(5u64))
-            })?;
-
-            cs.enforce(
-                || "y = x^3 + x + 5",
-                |lc| {
-                    lc + x_cu.get_variable()
-                        + x.get_variable()
-                        + CS::one()
-                        + CS::one()
-                        + CS::one()
-                        + CS::one()
-                        + CS::one()
-                },
-                |lc| lc + CS::one(),
-                |lc| lc + y.get_variable(),
-            );
-
-            Ok(vec![y])
-        }
-    }
-
-    // impl<F: PrimeField> CubicCircuit<F> {
-    //     fn output(&self, z: &[F]) -> Vec<F> {
-    //         vec![z[0] * z[0] * z[0] + z[0] + F::from(5u64)]
-    //     }
-    // }
 
     #[test]
     fn test() {
-        let compressed_snark_bytes =
-            handle_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
-        let vk_bytes = handle_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
-        verify_compressed_snark::<PallasEngine, VestaEngine>(&vk_bytes, &compressed_snark_bytes)
-            .unwrap();
+        let vk_bytes;
+        let snark_bytes;
+        let pubs = handle_pubs();
+
+        match pubs.first_curve {
+            CurveName::Pallas => {
+                vk_bytes = handle_vk::<
+                    PallasEngine,
+                    VestaEngine,
+                    GenericCircuit<Fq>,
+                    GenericCircuit<Fp>,
+                    EE<_>,
+                    EE<_>,
+                >();
+                snark_bytes = handle_compressed_snark::<
+                    PallasEngine,
+                    VestaEngine,
+                    GenericCircuit<Fq>,
+                    GenericCircuit<Fp>,
+                    EE<_>,
+                    EE<_>,
+                >();
+            }
+            CurveName::Vesta => {
+                vk_bytes = handle_vk::<
+                    VestaEngine,
+                    PallasEngine,
+                    GenericCircuit<Fp>,
+                    GenericCircuit<Fq>,
+                    EE<_>,
+                    EE<_>,
+                >();
+                snark_bytes = handle_compressed_snark::<
+                    VestaEngine,
+                    PallasEngine,
+                    GenericCircuit<Fp>,
+                    GenericCircuit<Fq>,
+                    EE<_>,
+                    EE<_>,
+                >();
+            }
+        }
+        verify_nova(&vk_bytes, &snark_bytes, pubs).unwrap();
+    }
+
+    fn handle_pubs() -> Pubs {
+        let json_path_pubs = "./src/resources/json/pubs.json";
+
+        let json_string_pubs =
+            fs::read_to_string(json_path_pubs).expect("Failed to read JSON file");
+
+        // ! From string into CompressedSTARK
+
+        serde_json::from_str(&json_string_pubs).expect("Failed to parse JSON")
     }
 
     // ! Helper functions
-    fn handle_vk<E1, E2, EE1, EE2>() -> Vec<u8>
+    fn handle_vk<E1, E2, C1, C2, EE1, EE2>() -> Vec<u8>
     where
         E1: Engine<Base = <E2 as Engine>::Scalar>,
         E2: Engine<Base = <E1 as Engine>::Scalar>,
+        C1: StepCircuit<E1::Scalar>,
+        C2: StepCircuit<E2::Scalar>,
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
@@ -95,14 +96,8 @@ mod tests {
         let json_string_vk = fs::read_to_string(json_path_vk).expect("Failed to read JSON file");
 
         // ! From string into CompressedSTARK
-        let json_data_vk: VerifierKey<
-            E1,
-            E2,
-            TrivialCircuit<<E1 as Engine>::Scalar>,
-            CubicCircuit<<E2 as Engine>::Scalar>,
-            S<E1, EE1>,
-            S<E2, EE2>,
-        > = serde_json::from_str(&json_string_vk).expect("Failed to parse JSON");
+        let json_data_vk: VerifierKey<E1, E2, C1, C2, S<E1, EE1>, S<E2, EE2>> =
+            serde_json::from_str(&json_string_vk).expect("Failed to parse JSON");
         // println!("{:?}", json_data_vk);
 
         // ! Serialize into Bytes
@@ -116,17 +111,19 @@ mod tests {
         let bytes_from_file_vk = fs::read(output_path_vk).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
-        let deserialized_value_vk =
+        let _deserialized_value_vk =
             deserializer::deserialize_vk::<E1, E2, EE1, EE2>(&bytes_from_file_vk).unwrap();
 
         bytes_from_file_vk
     }
 
     // ! Helper functions
-    fn handle_compressed_snark<E1, E2, EE1, EE2>() -> Vec<u8>
+    fn handle_compressed_snark<E1, E2, C1, C2, EE1, EE2>() -> Vec<u8>
     where
         E1: Engine<Base = <E2 as Engine>::Scalar>,
         E2: Engine<Base = <E1 as Engine>::Scalar>,
+        C1: StepCircuit<E1::Scalar>,
+        C2: StepCircuit<E2::Scalar>,
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
@@ -136,14 +133,8 @@ mod tests {
             fs::read_to_string(json_path_compressed_snark).expect("Failed to read JSON file");
 
         // ! From string into CompressedSTARK
-        let json_data_compressed_snark: CompressedSNARK<
-            E1,
-            E2,
-            TrivialCircuit<<E1 as Engine>::Scalar>,
-            CubicCircuit<<E2 as Engine>::Scalar>,
-            S<E1, EE1>,
-            S<E2, EE2>,
-        > = serde_json::from_str(&json_string_compressed_snark).expect("Failed to parse JSON");
+        let json_data_compressed_snark: CompressedSNARK<E1, E2, C1, C2, S<E1, EE1>, S<E2, EE2>> =
+            serde_json::from_str(&json_string_compressed_snark).expect("Failed to parse JSON");
         // println!("{:?}", json_data_compressed_snark);
 
         // ! Serialize into Bytes
@@ -158,7 +149,7 @@ mod tests {
         let bytes_from_file_compressed_snark = fs::read(output_path_compressed_snark).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
-        let deserialized_value_compressed_snark =
+        let _deserialized_value_compressed_snark =
             deserializer::deserialize_compressed_snark::<E1, E2, EE1, EE2>(
                 &bytes_from_file_compressed_snark,
             )
