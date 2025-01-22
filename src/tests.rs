@@ -72,7 +72,7 @@ mod tests {
     }
 
     fn handle_pubs() -> Vec<u8> {
-        let json_path_pubs = "./src/resources/json/pubs.json";
+        let json_path_pubs = "./src/resources/json/pubs_0.json";
 
         let json_string_pubs =
             fs::read_to_string(json_path_pubs).expect("Failed to read JSON file");
@@ -86,10 +86,15 @@ mod tests {
         // println!("{:?}", bytes_pubs.len());
 
         // ! Write bytes to file
-        let output_path_pubs = "./src/resources/bin/pubs.bin";
-        fs::write(output_path_pubs, bytes_pubs).expect("Failed to write binary file");
+        let output_bin_path_pubs = "./src/resources/bin/pubs_0.bin";
+        fs::write(output_bin_path_pubs, &bytes_pubs).expect("Failed to write binary file");
+
+        let bytes_string_pubs = serde_json::to_string(&bytes_pubs).unwrap();
+        let output_txt_path_pubs = "./src/resources/txt/pubs_0.txt";
+        fs::write(output_txt_path_pubs, bytes_string_pubs).expect("Failed to write txt file");
+
         // ! Read bytes from file
-        let bytes_from_file_pubs = fs::read(output_path_pubs).unwrap();
+        let bytes_from_file_pubs = fs::read(output_bin_path_pubs).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
         let _deserialized_value_pubs =
@@ -108,7 +113,7 @@ mod tests {
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let json_path_vk = "./src/resources/json/vk.json";
+        let json_path_vk = "./src/resources/json/vk_0.json";
         // ! Read from JSON to String
         let json_string_vk = fs::read_to_string(json_path_vk).expect("Failed to read JSON file");
 
@@ -122,10 +127,16 @@ mod tests {
         // println!("{:?}", bytes_vk.len());
 
         // ! Write bytes to file
-        let output_path_vk = "./src/resources/bin/vk.bin";
-        fs::write(output_path_vk, bytes_vk).expect("Failed to write binary file");
+        let output_bin_path_vk = "./src/resources/bin/vk_0.bin";
+        fs::write(output_bin_path_vk, &bytes_vk).expect("Failed to write binary file");
+
+        let bytes_string_vk = serde_json::to_string(&bytes_vk).unwrap();
+        let output_txt_path_vk = "./src/resources/txt/vk_0.txt";
+        fs::write(output_txt_path_vk, bytes_string_vk).expect("Failed to write txt file");
+        std::println!("VKVKVKVK");
+
         // ! Read bytes from file
-        let bytes_from_file_vk = fs::read(output_path_vk).unwrap();
+        let bytes_from_file_vk = fs::read(output_bin_path_vk).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
         let _deserialized_value_vk =
@@ -144,7 +155,7 @@ mod tests {
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let json_path_compressed_snark = "./src/resources/json/compressed_snark.json";
+        let json_path_compressed_snark = "./src/resources/json/compressed_snark_0.json";
         // ! Read from JSON to String
         let json_string_compressed_snark =
             fs::read_to_string(json_path_compressed_snark).expect("Failed to read JSON file");
@@ -159,11 +170,20 @@ mod tests {
         // println!("{:?}", bytes_compressed_snark);
 
         // ! Write bytes to file
-        let output_path_compressed_snark = "./src/resources/bin/compressed_snark.bin";
-        fs::write(output_path_compressed_snark, bytes_compressed_snark)
+        let output_bin_path_compressed_snark = "./src/resources/bin/compressed_snark_0.bin";
+        fs::write(output_bin_path_compressed_snark, &bytes_compressed_snark)
             .expect("Failed to write binary file");
+
+        let bytes_string_compressed_snark = serde_json::to_string(&bytes_compressed_snark).unwrap();
+        let output_txt_path_compressed_snark = "./src/resources/txt/compressed_snark_0.txt";
+        fs::write(
+            output_txt_path_compressed_snark,
+            bytes_string_compressed_snark,
+        )
+        .expect("Failed to write txt file");
+
         // ! Read bytes from file
-        let bytes_from_file_compressed_snark = fs::read(output_path_compressed_snark).unwrap();
+        let bytes_from_file_compressed_snark = fs::read(output_bin_path_compressed_snark).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
         let _deserialized_value_compressed_snark =

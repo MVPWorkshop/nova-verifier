@@ -65,6 +65,7 @@ fn verify_compressed_snark_pallas_vesta(
             &mut vk,
             // ! NUMBER OF STEPS CAN NOT BE 0 !!!
             3,
+            // TODO -> check if this is always ONE to ZERO
             &[<PallasEngine as Engine>::Scalar::ONE],
             &[<VestaEngine as Engine>::Scalar::ZERO],
         )
@@ -97,6 +98,7 @@ where
             &mut vk,
             // ! NUMBER OF STEPS CAN NOT BE 0 !!!
             3,
+            // TODO -> check if this is always ONE to ZERO
             &[<VestaEngine as Engine>::Scalar::ONE],
             &[<PallasEngine as Engine>::Scalar::ZERO],
         )
