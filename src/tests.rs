@@ -2,7 +2,7 @@
 mod tests {
 
     extern crate std;
-    use std::{fs, vec::Vec};
+    use std::{format, fs, vec::Vec};
 
     use nova_snark::{
         provider::{PallasEngine, VestaEngine},
@@ -25,9 +25,14 @@ mod tests {
 
     #[test]
     fn test() {
+        test_full("quadratic");
+        test_full("cubic");
+    }
+
+    fn test_full(path: &str) {
         let vk_bytes;
         let snark_bytes;
-        let pubs_bytes = handle_pubs();
+        let pubs_bytes = handle_pubs(&path);
         let pubs = deserialize_pubs(&pubs_bytes).unwrap();
 
         match pubs.first_curve {
@@ -39,7 +44,7 @@ mod tests {
                     GenericCircuit<Fp>,
                     EE<_>,
                     EE<_>,
-                >();
+                >(&path);
                 snark_bytes = handle_compressed_snark::<
                     PallasEngine,
                     VestaEngine,
@@ -47,7 +52,7 @@ mod tests {
                     GenericCircuit<Fp>,
                     EE<_>,
                     EE<_>,
-                >();
+                >(&path);
             }
             CurveName::Vesta => {
                 vk_bytes = handle_vk::<
@@ -57,7 +62,7 @@ mod tests {
                     GenericCircuit<Fq>,
                     EE<_>,
                     EE<_>,
-                >();
+                >(&path);
                 snark_bytes = handle_compressed_snark::<
                     VestaEngine,
                     PallasEngine,
@@ -65,14 +70,14 @@ mod tests {
                     GenericCircuit<Fq>,
                     EE<_>,
                     EE<_>,
-                >();
+                >(&path);
             }
         }
         verify_nova(&vk_bytes, &snark_bytes, &pubs_bytes).unwrap();
     }
 
-    fn handle_pubs() -> Vec<u8> {
-        let json_path_pubs = "./src/resources/json/pubs_0.json";
+    fn handle_pubs(path: &str) -> Vec<u8> {
+        let json_path_pubs = format!("./src/resources/json/{}/pubs.json", &path);
 
         let json_string_pubs =
             fs::read_to_string(json_path_pubs).expect("Failed to read JSON file");
@@ -86,15 +91,16 @@ mod tests {
         // println!("{:?}", bytes_pubs.len());
 
         // ! Write bytes to file
-        let output_bin_path_pubs = "./src/resources/bin/pubs_0.bin";
-        fs::write(output_bin_path_pubs, &bytes_pubs).expect("Failed to write binary file");
+        let output_bin_path_pubs = format!("./src/resources/bin/{}/pubs.bin", &path);
+        fs::write(output_bin_path_pubs.clone(), &bytes_pubs).expect("Failed to write binary file");
 
         let bytes_string_pubs = serde_json::to_string(&bytes_pubs).unwrap();
-        let output_txt_path_pubs = "./src/resources/txt/pubs_0.txt";
-        fs::write(output_txt_path_pubs, bytes_string_pubs).expect("Failed to write txt file");
+        let output_txt_path_pubs = format!("./src/resources/txt/{}/pubs.txt", &path);
+        fs::write(output_txt_path_pubs.clone(), bytes_string_pubs)
+            .expect("Failed to write txt file");
 
         // ! Read bytes from file
-        let bytes_from_file_pubs = fs::read(output_bin_path_pubs).unwrap();
+        let bytes_from_file_pubs = fs::read(output_bin_path_pubs.clone()).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
         let _deserialized_value_pubs =
@@ -104,7 +110,7 @@ mod tests {
     }
 
     // ! Helper functions
-    fn handle_vk<E1, E2, C1, C2, EE1, EE2>() -> Vec<u8>
+    fn handle_vk<E1, E2, C1, C2, EE1, EE2>(path: &str) -> Vec<u8>
     where
         E1: Engine<Base = <E2 as Engine>::Scalar>,
         E2: Engine<Base = <E1 as Engine>::Scalar>,
@@ -113,7 +119,7 @@ mod tests {
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let json_path_vk = "./src/resources/json/vk_0.json";
+        let json_path_vk = format!("./src/resources/json/{}/vk.json", &path);
         // ! Read from JSON to String
         let json_string_vk = fs::read_to_string(json_path_vk).expect("Failed to read JSON file");
 
@@ -127,16 +133,15 @@ mod tests {
         // println!("{:?}", bytes_vk.len());
 
         // ! Write bytes to file
-        let output_bin_path_vk = "./src/resources/bin/vk_0.bin";
-        fs::write(output_bin_path_vk, &bytes_vk).expect("Failed to write binary file");
+        let output_bin_path_vk = format!("./src/resources/bin/{}/vk.bin", &path);
+        fs::write(output_bin_path_vk.clone(), &bytes_vk).expect("Failed to write binary file");
 
         let bytes_string_vk = serde_json::to_string(&bytes_vk).unwrap();
-        let output_txt_path_vk = "./src/resources/txt/vk_0.txt";
+        let output_txt_path_vk = format!("./src/resources/txt/{}/vk.txt", &path);
         fs::write(output_txt_path_vk, bytes_string_vk).expect("Failed to write txt file");
-        std::println!("VKVKVKVK");
 
         // ! Read bytes from file
-        let bytes_from_file_vk = fs::read(output_bin_path_vk).unwrap();
+        let bytes_from_file_vk = fs::read(output_bin_path_vk.clone()).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
         let _deserialized_value_vk =
@@ -146,7 +151,7 @@ mod tests {
     }
 
     // ! Helper functions
-    fn handle_compressed_snark<E1, E2, C1, C2, EE1, EE2>() -> Vec<u8>
+    fn handle_compressed_snark<E1, E2, C1, C2, EE1, EE2>(path: &str) -> Vec<u8>
     where
         E1: Engine<Base = <E2 as Engine>::Scalar>,
         E2: Engine<Base = <E1 as Engine>::Scalar>,
@@ -155,7 +160,8 @@ mod tests {
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let json_path_compressed_snark = "./src/resources/json/compressed_snark_0.json";
+        let json_path_compressed_snark =
+            format!("./src/resources/json/{}/compressed_snark.json", &path);
         // ! Read from JSON to String
         let json_string_compressed_snark =
             fs::read_to_string(json_path_compressed_snark).expect("Failed to read JSON file");
@@ -170,12 +176,17 @@ mod tests {
         // println!("{:?}", bytes_compressed_snark);
 
         // ! Write bytes to file
-        let output_bin_path_compressed_snark = "./src/resources/bin/compressed_snark_0.bin";
-        fs::write(output_bin_path_compressed_snark, &bytes_compressed_snark)
-            .expect("Failed to write binary file");
+        let output_bin_path_compressed_snark =
+            format!("./src/resources/bin/{}/compressed_snark.bin", &path);
+        fs::write(
+            output_bin_path_compressed_snark.clone(),
+            &bytes_compressed_snark,
+        )
+        .expect("Failed to write binary file");
 
         let bytes_string_compressed_snark = serde_json::to_string(&bytes_compressed_snark).unwrap();
-        let output_txt_path_compressed_snark = "./src/resources/txt/compressed_snark_0.txt";
+        let output_txt_path_compressed_snark =
+            format!("./src/resources/txt/{}/compressed_snark.txt", &path);
         fs::write(
             output_txt_path_compressed_snark,
             bytes_string_compressed_snark,
@@ -183,7 +194,8 @@ mod tests {
         .expect("Failed to write txt file");
 
         // ! Read bytes from file
-        let bytes_from_file_compressed_snark = fs::read(output_bin_path_compressed_snark).unwrap();
+        let bytes_from_file_compressed_snark =
+            fs::read(output_bin_path_compressed_snark.clone()).unwrap();
 
         // ! Just a check that it is in right format and it can be deserialized
         let _deserialized_value_compressed_snark =
