@@ -123,7 +123,7 @@ mod tests {
         // ! Read from JSON to String
         let json_string_vk = fs::read_to_string(json_path_vk).expect("Failed to read JSON file");
 
-        // ! From string into CompressedSTARK
+        // ! From string into Vk
         let json_data_vk: VerifierKey<E1, E2, C1, C2, S<E1, EE1>, S<E2, EE2>> =
             serde_json::from_str(&json_string_vk).expect("Failed to parse JSON");
         // println!("{:?}", json_data_vk);
