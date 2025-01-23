@@ -3,6 +3,7 @@ extern crate alloc;
 use alloc::vec::Vec;
 use ff::Field;
 use nova_snark::{
+    errors::NovaError,
     provider::{PallasEngine, VestaEngine},
     traits::Engine,
 };
@@ -13,6 +14,17 @@ use crate::deserializer::{
 };
 
 type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum NovaVerifierError {
+    #[error("Deserialization error: {0}")]
+    Deserialize(#[from] DeserializeError),
+    // ! Seems like we are only using NovaError::ProofVerifyError
+    #[error("Nova error: {0}")]
+    Nova(#[from] NovaError),
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum CurveName {
@@ -32,8 +44,7 @@ pub fn verify_nova(
     vk_bytes: &Vec<u8>,
     snark_bytes: &Vec<u8>,
     pubs_bytes: &Vec<u8>,
-) -> Result<(), DeserializeError> {
-    // ! TODO -> Remove unwraps in all code !!!
+) -> Result<(), NovaVerifierError> {
     // ! TODO -> Pass num_of_steps and other 2 nums
     let pubs = deserialize_pubs(&pubs_bytes)?;
     match pubs.first_curve {
@@ -45,45 +56,42 @@ pub fn verify_nova(
 pub fn verify_pallas_vesta(
     vk_bytes: &Vec<u8>,
     snark_bytes: &Vec<u8>,
-) -> Result<(), DeserializeError> {
+) -> Result<(), NovaVerifierError> {
     verify_compressed_snark_pallas_vesta(vk_bytes, snark_bytes)
 }
 
 fn verify_compressed_snark_pallas_vesta(
     vk_bytes: &Vec<u8>,
     compressed_snark_bytes: &Vec<u8>,
-) -> Result<(), DeserializeError> {
+) -> Result<(), NovaVerifierError> {
     let compressed_snark = deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
         &compressed_snark_bytes,
     )?;
 
     let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
-    // ! TODO -> map_err with Nova error !!!
-    compressed_snark
-        .verify(
-            &mut vk,
-            // ! NUMBER OF STEPS CAN NOT BE 0 !!!
-            3,
-            // TODO -> check if this is always ONE to ZERO
-            &[<PallasEngine as Engine>::Scalar::ONE],
-            &[<VestaEngine as Engine>::Scalar::ZERO],
-        )
-        .unwrap();
+    compressed_snark.verify(
+        &mut vk,
+        // ! NUMBER OF STEPS CAN NOT BE 0 !!!
+        3,
+        // TODO -> check if this is always ONE to ZERO
+        &[<PallasEngine as Engine>::Scalar::ONE],
+        &[<VestaEngine as Engine>::Scalar::ZERO],
+    )?;
     Ok(())
 }
 
 pub fn verify_vesta_pallas(
     vk_bytes: &Vec<u8>,
     snark_bytes: &Vec<u8>,
-) -> Result<(), DeserializeError> {
+) -> Result<(), NovaVerifierError> {
     verify_compressed_snark_vesta_pallas(vk_bytes, snark_bytes)
 }
 
 fn verify_compressed_snark_vesta_pallas(
     vk_bytes: &Vec<u8>,
     compressed_snark_bytes: &Vec<u8>,
-) -> Result<(), DeserializeError>
+) -> Result<(), NovaVerifierError>
 where
 {
     let compressed_snark = deserialize_compressed_snark::<VestaEngine, PallasEngine, EE<_>, EE<_>>(
@@ -92,16 +100,13 @@ where
 
     let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
-    // ! TODO -> map_err with Nova error !!!
-    compressed_snark
-        .verify(
-            &mut vk,
-            // ! NUMBER OF STEPS CAN NOT BE 0 !!!
-            3,
-            // TODO -> check if this is always ONE to ZERO
-            &[<VestaEngine as Engine>::Scalar::ONE],
-            &[<PallasEngine as Engine>::Scalar::ZERO],
-        )
-        .unwrap();
+    compressed_snark.verify(
+        &mut vk,
+        // ! NUMBER OF STEPS CAN NOT BE 0 !!!
+        3,
+        // TODO -> check if this is always ONE to ZERO
+        &[<VestaEngine as Engine>::Scalar::ONE],
+        &[<PallasEngine as Engine>::Scalar::ZERO],
+    )?;
     Ok(())
 }
