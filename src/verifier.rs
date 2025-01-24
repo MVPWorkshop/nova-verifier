@@ -35,7 +35,7 @@ pub enum CurveName {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Pubs {
     pub first_curve: CurveName,
-    pub num_of_steps: u32,
+    pub num_of_steps: usize,
     pub num1: u32,
     pub num2: u32,
 }
@@ -46,23 +46,31 @@ pub fn verify_nova(
     pubs_bytes: &Vec<u8>,
 ) -> Result<(), NovaVerifierError> {
     // ! TODO -> Pass num_of_steps and other 2 nums
-    let pubs = deserialize_pubs(&pubs_bytes)?;
-    match pubs.first_curve {
-        CurveName::Pallas => verify_pallas_vesta(vk_bytes, snark_bytes),
-        CurveName::Vesta => verify_vesta_pallas(vk_bytes, snark_bytes),
+    let Pubs {
+        first_curve,
+        num_of_steps,
+        num1,
+        num2,
+    } = deserialize_pubs(&pubs_bytes)?;
+
+    match first_curve {
+        CurveName::Pallas => verify_pallas_vesta(vk_bytes, snark_bytes, num_of_steps),
+        CurveName::Vesta => verify_vesta_pallas(vk_bytes, snark_bytes, num_of_steps),
     }
 }
 
 pub fn verify_pallas_vesta(
     vk_bytes: &Vec<u8>,
     snark_bytes: &Vec<u8>,
+    num_of_steps: usize,
 ) -> Result<(), NovaVerifierError> {
-    verify_compressed_snark_pallas_vesta(vk_bytes, snark_bytes)
+    verify_compressed_snark_pallas_vesta(vk_bytes, snark_bytes, num_of_steps)
 }
 
 fn verify_compressed_snark_pallas_vesta(
     vk_bytes: &Vec<u8>,
     compressed_snark_bytes: &Vec<u8>,
+    num_of_steps: usize,
 ) -> Result<(), NovaVerifierError> {
     let compressed_snark = deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
         &compressed_snark_bytes,
@@ -73,7 +81,7 @@ fn verify_compressed_snark_pallas_vesta(
     compressed_snark.verify(
         &mut vk,
         // ! NUMBER OF STEPS CAN NOT BE 0 !!!
-        3,
+        num_of_steps,
         // TODO -> check if this is always ONE to ZERO
         &[<PallasEngine as Engine>::Scalar::ONE],
         &[<VestaEngine as Engine>::Scalar::ZERO],
@@ -84,13 +92,15 @@ fn verify_compressed_snark_pallas_vesta(
 pub fn verify_vesta_pallas(
     vk_bytes: &Vec<u8>,
     snark_bytes: &Vec<u8>,
+    num_of_steps: usize,
 ) -> Result<(), NovaVerifierError> {
-    verify_compressed_snark_vesta_pallas(vk_bytes, snark_bytes)
+    verify_compressed_snark_vesta_pallas(vk_bytes, snark_bytes, num_of_steps)
 }
 
 fn verify_compressed_snark_vesta_pallas(
     vk_bytes: &Vec<u8>,
     compressed_snark_bytes: &Vec<u8>,
+    num_of_steps: usize,
 ) -> Result<(), NovaVerifierError>
 where
 {
@@ -103,7 +113,7 @@ where
     compressed_snark.verify(
         &mut vk,
         // ! NUMBER OF STEPS CAN NOT BE 0 !!!
-        3,
+        num_of_steps,
         // TODO -> check if this is always ONE to ZERO
         &[<VestaEngine as Engine>::Scalar::ONE],
         &[<PallasEngine as Engine>::Scalar::ZERO],
