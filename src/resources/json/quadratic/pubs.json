@@ -1,6 +1,6 @@
 {
   "first_curve": "Pallas",
   "num_of_steps": 3,
-  "num1": 1,
-  "num2": 0
+  "z0_primary": "ONE",
+  "z0_secondary": "ZERO"
 }

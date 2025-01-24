@@ -1,8 +1,7 @@
 extern crate alloc;
 
-use alloc::vec::Vec;
-
 use crate::verifier::Pubs;
+use alloc::vec::Vec;
 use nova_snark::{
     traits::{circuit::GenericCircuit, evaluation::EvaluationEngineTrait, Engine},
     CompressedSNARK, VerifierKey,

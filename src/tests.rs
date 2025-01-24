@@ -2,8 +2,10 @@
 mod tests {
 
     extern crate std;
-    use std::{boxed::Box, format, fs, vec::Vec};
-
+    use crate::{
+        deserializer::{self, deserialize_pubs},
+        verifier::{verify_nova, CurveName, Pubs},
+    };
     use nova_snark::{
         provider::{PallasEngine, VestaEngine},
         traits::{
@@ -14,11 +16,7 @@ mod tests {
         CompressedSNARK, VerifierKey,
     };
     use pasta_curves::{Fp, Fq};
-
-    use crate::{
-        deserializer::{self, deserialize_pubs},
-        verifier::{verify_nova, CurveName, Pubs},
-    };
+    use std::{boxed::Box, format, fs, vec::Vec};
 
     type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
     type S<E, EE> = nova_snark::spartan::snark::RelaxedR1CSSNARK<E, EE>;
