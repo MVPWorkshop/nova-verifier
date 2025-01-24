@@ -3,7 +3,7 @@ mod tests {
 
     extern crate std;
     use crate::{
-        deserializer::{self, deserialize_pubs},
+        deserializer::{self, deserialize_pubs, DeserializeError},
         verifier::{verify_nova, CurveName, Pubs},
     };
     use nova_snark::{
@@ -22,9 +22,50 @@ mod tests {
     type S<E, EE> = nova_snark::spartan::snark::RelaxedR1CSSNARK<E, EE>;
 
     #[test]
-    fn test() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_success() -> Result<(), Box<dyn std::error::Error>> {
         test_full("quadratic")?;
         test_full("cubic")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_bad_pubs_deserialization() -> Result<(), Box<dyn std::error::Error>> {
+        test_pubs_deserialization_fails("cubic")?;
+        test_pubs_deserialization_fails("quadratic")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_bad_proof_deserialization() -> Result<(), Box<dyn std::error::Error>> {
+        test_proof_deserialization_fails("cubic")?;
+        test_proof_deserialization_fails("quadratic")?;
+        Ok(())
+    }
+
+    fn test_proof_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let output_bin_path_compressed_snark =
+            format!("./src/resources/bin/{}/compressed_snark.bin", &path);
+        let mut bytes_from_file_compressed_snark =
+            fs::read(output_bin_path_compressed_snark.clone())?;
+
+        bytes_from_file_compressed_snark[11] = 11;
+        // ! CAN PANIC when add line below !!!
+        // bytes_from_file_compressed_snark[0] = 11;
+
+        let result =
+            deserializer::deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
+                &bytes_from_file_compressed_snark,
+            );
+        assert!(matches!(result, Err(DeserializeError::InvalidProof)));
+        Ok(())
+    }
+
+    fn test_pubs_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let output_bin_path_pubs = format!("./src/resources/bin/{}/pubs.bin", &path);
+        let mut bytes_from_file_pubs = fs::read(output_bin_path_pubs.clone())?;
+        bytes_from_file_pubs[0] += 11;
+        let result = deserializer::deserialize_pubs(&bytes_from_file_pubs);
+        assert!(matches!(result, Err(DeserializeError::InvalidPubs)));
         Ok(())
     }
 
