@@ -2,168 +2,243 @@
 mod tests {
 
     extern crate std;
-
-    use std::{fs, marker::PhantomData, vec, vec::Vec};
-
+    use crate::{
+        deserializer::{self, deserialize_pubs, DeserializeError},
+        verifier::{verify_nova, CurveName, Pubs},
+    };
     use nova_snark::{
-        frontend::{num::AllocatedNum, ConstraintSystem, SynthesisError},
         provider::{PallasEngine, VestaEngine},
         traits::{
-            circuit::{StepCircuit, TrivialCircuit},
+            circuit::{GenericCircuit, StepCircuit},
             evaluation::EvaluationEngineTrait,
             Engine,
         },
         CompressedSNARK, VerifierKey,
     };
-
-    use ff::PrimeField;
-
-    use crate::{deserializer, verifier::verify_compressed_snark};
+    use pasta_curves::{Fp, Fq};
+    use std::{boxed::Box, format, fs, vec::Vec};
 
     type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
-    // type EEPrime<E> = nova_snark::provider::hyperkzg::EvaluationEngine<E>;
     type S<E, EE> = nova_snark::spartan::snark::RelaxedR1CSSNARK<E, EE>;
-    // type SPrime<E, EE> = nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
-
-    #[derive(Clone, Debug, Default)]
-    struct CubicCircuit<F: PrimeField> {
-        _p: PhantomData<F>,
-    }
-
-    impl<F: PrimeField> StepCircuit<F> for CubicCircuit<F> {
-        fn arity(&self) -> usize {
-            1
-        }
-
-        fn synthesize<CS: ConstraintSystem<F>>(
-            &self,
-            cs: &mut CS,
-            z: &[AllocatedNum<F>],
-        ) -> Result<Vec<AllocatedNum<F>>, SynthesisError> {
-            // Consider a cubic equation: `x^3 + x + 5 = y`, where `x` and `y` are respectively the input and output.
-            let x = &z[0];
-            let x_sq = x.square(cs.namespace(|| "x_sq"))?;
-            let x_cu = x_sq.mul(cs.namespace(|| "x_cu"), x)?;
-            let y = AllocatedNum::alloc(cs.namespace(|| "y"), || {
-                Ok(x_cu.get_value().unwrap() + x.get_value().unwrap() + F::from(5u64))
-            })?;
-
-            cs.enforce(
-                || "y = x^3 + x + 5",
-                |lc| {
-                    lc + x_cu.get_variable()
-                        + x.get_variable()
-                        + CS::one()
-                        + CS::one()
-                        + CS::one()
-                        + CS::one()
-                        + CS::one()
-                },
-                |lc| lc + CS::one(),
-                |lc| lc + y.get_variable(),
-            );
-
-            Ok(vec![y])
-        }
-    }
-
-    // impl<F: PrimeField> CubicCircuit<F> {
-    //     fn output(&self, z: &[F]) -> Vec<F> {
-    //         vec![z[0] * z[0] * z[0] + z[0] + F::from(5u64)]
-    //     }
-    // }
 
     #[test]
-    fn test() {
-        let compressed_snark_bytes =
-            handle_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
-        let vk_bytes = handle_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>();
-        verify_compressed_snark::<PallasEngine, VestaEngine>(&vk_bytes, &compressed_snark_bytes)
-            .unwrap();
+    fn test_success() -> Result<(), Box<dyn std::error::Error>> {
+        test_full("quadratic")?;
+        test_full("cubic")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_bad_pubs_deserialization() -> Result<(), Box<dyn std::error::Error>> {
+        test_pubs_deserialization_fails("cubic")?;
+        test_pubs_deserialization_fails("quadratic")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_bad_proof_deserialization() -> Result<(), Box<dyn std::error::Error>> {
+        test_proof_deserialization_fails("cubic")?;
+        test_proof_deserialization_fails("quadratic")?;
+        Ok(())
+    }
+
+    fn test_proof_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let output_bin_path_compressed_snark =
+            format!("./src/resources/bin/{}/compressed_snark.bin", &path);
+        let mut bytes_from_file_compressed_snark =
+            fs::read(output_bin_path_compressed_snark.clone())?;
+
+        bytes_from_file_compressed_snark[11] = 11;
+        // ! CAN PANIC when add line below !!!
+        // bytes_from_file_compressed_snark[0] = 11;
+
+        let result =
+            deserializer::deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
+                &bytes_from_file_compressed_snark,
+            );
+        assert!(matches!(result, Err(DeserializeError::InvalidProof)));
+        Ok(())
+    }
+
+    fn test_pubs_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let output_bin_path_pubs = format!("./src/resources/bin/{}/pubs.bin", &path);
+        let mut bytes_from_file_pubs = fs::read(output_bin_path_pubs.clone())?;
+        bytes_from_file_pubs[0] += 11;
+        let result = deserializer::deserialize_pubs(&bytes_from_file_pubs);
+        assert!(matches!(result, Err(DeserializeError::InvalidPubs)));
+        Ok(())
+    }
+
+    fn test_full(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let vk_bytes;
+        let snark_bytes;
+        let pubs_bytes = handle_pubs(&path)?;
+        let pubs = deserialize_pubs(&pubs_bytes)?;
+
+        match pubs.first_curve {
+            CurveName::Pallas => {
+                vk_bytes = handle_vk::<
+                    PallasEngine,
+                    VestaEngine,
+                    GenericCircuit<Fq>,
+                    GenericCircuit<Fp>,
+                    EE<_>,
+                    EE<_>,
+                >(&path)?;
+                snark_bytes = handle_compressed_snark::<
+                    PallasEngine,
+                    VestaEngine,
+                    GenericCircuit<Fq>,
+                    GenericCircuit<Fp>,
+                    EE<_>,
+                    EE<_>,
+                >(&path)?;
+            }
+            CurveName::Vesta => {
+                vk_bytes = handle_vk::<
+                    VestaEngine,
+                    PallasEngine,
+                    GenericCircuit<Fp>,
+                    GenericCircuit<Fq>,
+                    EE<_>,
+                    EE<_>,
+                >(&path)?;
+                snark_bytes = handle_compressed_snark::<
+                    VestaEngine,
+                    PallasEngine,
+                    GenericCircuit<Fp>,
+                    GenericCircuit<Fq>,
+                    EE<_>,
+                    EE<_>,
+                >(&path)?;
+            }
+        }
+        verify_nova(&vk_bytes, &snark_bytes, &pubs_bytes)?;
+        Ok(())
+    }
+
+    fn handle_pubs(path: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let json_path_pubs = format!("./src/resources/json/{}/pubs.json", &path);
+
+        let json_string_pubs = fs::read_to_string(json_path_pubs)?;
+
+        // ! From string into Pubs
+        let json_data_pubs: Pubs = serde_json::from_str(&json_string_pubs)?;
+
+        // ! Serialize into Bytes
+        let bytes_pubs = postcard::to_allocvec(&json_data_pubs)?;
+        // println!("{:?}", bytes_pubs.len());
+
+        // ! Write bytes to file
+        let output_bin_path_pubs = format!("./src/resources/bin/{}/pubs.bin", &path);
+        fs::write(output_bin_path_pubs.clone(), &bytes_pubs)?;
+
+        let bytes_string_pubs = serde_json::to_string(&bytes_pubs)?;
+        let output_txt_path_pubs = format!("./src/resources/txt/{}/pubs.txt", &path);
+        fs::write(output_txt_path_pubs.clone(), bytes_string_pubs)?;
+
+        // ! Read bytes from file
+        let bytes_from_file_pubs = fs::read(output_bin_path_pubs.clone())?;
+
+        // ! Just a check that it is in right format and it can be deserialized
+        deserializer::deserialize_pubs(&bytes_from_file_pubs)?;
+
+        Ok(bytes_from_file_pubs)
     }
 
     // ! Helper functions
-    fn handle_vk<E1, E2, EE1, EE2>() -> Vec<u8>
+    fn handle_vk<E1, E2, C1, C2, EE1, EE2>(
+        path: &str,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>>
     where
         E1: Engine<Base = <E2 as Engine>::Scalar>,
         E2: Engine<Base = <E1 as Engine>::Scalar>,
+        C1: StepCircuit<E1::Scalar>,
+        C2: StepCircuit<E2::Scalar>,
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let json_path_vk = "./src/resources/json/vk.json";
+        let json_path_vk = format!("./src/resources/json/{}/vk.json", &path);
         // ! Read from JSON to String
-        let json_string_vk = fs::read_to_string(json_path_vk).expect("Failed to read JSON file");
+        let json_string_vk = fs::read_to_string(json_path_vk)?;
 
-        // ! From string into CompressedSTARK
-        let json_data_vk: VerifierKey<
-            E1,
-            E2,
-            TrivialCircuit<<E1 as Engine>::Scalar>,
-            CubicCircuit<<E2 as Engine>::Scalar>,
-            S<E1, EE1>,
-            S<E2, EE2>,
-        > = serde_json::from_str(&json_string_vk).expect("Failed to parse JSON");
+        // ! From string into Vk
+        let json_data_vk: VerifierKey<E1, E2, C1, C2, S<E1, EE1>, S<E2, EE2>> =
+            serde_json::from_str(&json_string_vk)?;
         // println!("{:?}", json_data_vk);
 
         // ! Serialize into Bytes
-        let bytes_vk = postcard::to_allocvec(&json_data_vk).unwrap();
-        // println!("{:?}", bytes_vk.len());
+        let bytes_vk = postcard::to_allocvec(&json_data_vk)?;
 
-        // ! Write bytes to file
-        let output_path_vk = "./src/resources/bin/vk.bin";
-        fs::write(output_path_vk, bytes_vk).expect("Failed to write binary file");
-        // ! Read bytes from file
-        let bytes_from_file_vk = fs::read(output_path_vk).unwrap();
+        // ! Write bytes to BIN file
+        let output_bin_path_vk = format!("./src/resources/bin/{}/vk.bin", &path);
+        fs::write(output_bin_path_vk.clone(), &bytes_vk)?;
+
+        // ! Writes bytes to TXT file
+        let bytes_string_vk = serde_json::to_string(&bytes_vk)?;
+        let output_txt_path_vk = format!("./src/resources/txt/{}/vk.txt", &path);
+        fs::write(output_txt_path_vk, bytes_string_vk)?;
+
+        // ! Read bytes from BIN file
+        let bytes_from_file_vk = fs::read(output_bin_path_vk.clone())?;
 
         // ! Just a check that it is in right format and it can be deserialized
-        let deserialized_value_vk =
-            deserializer::deserialize_vk::<E1, E2, EE1, EE2>(&bytes_from_file_vk).unwrap();
+        deserializer::deserialize_vk::<E1, E2, EE1, EE2>(&bytes_from_file_vk)?;
 
-        bytes_from_file_vk
+        Ok(bytes_from_file_vk)
     }
 
     // ! Helper functions
-    fn handle_compressed_snark<E1, E2, EE1, EE2>() -> Vec<u8>
+    fn handle_compressed_snark<E1, E2, C1, C2, EE1, EE2>(
+        path: &str,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>>
     where
         E1: Engine<Base = <E2 as Engine>::Scalar>,
         E2: Engine<Base = <E1 as Engine>::Scalar>,
+        C1: StepCircuit<E1::Scalar>,
+        C2: StepCircuit<E2::Scalar>,
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let json_path_compressed_snark = "./src/resources/json/compressed_snark.json";
+        let json_path_compressed_snark =
+            format!("./src/resources/json/{}/compressed_snark.json", &path);
         // ! Read from JSON to String
-        let json_string_compressed_snark =
-            fs::read_to_string(json_path_compressed_snark).expect("Failed to read JSON file");
+        let json_string_compressed_snark = fs::read_to_string(json_path_compressed_snark)?;
 
         // ! From string into CompressedSTARK
-        let json_data_compressed_snark: CompressedSNARK<
-            E1,
-            E2,
-            TrivialCircuit<<E1 as Engine>::Scalar>,
-            CubicCircuit<<E2 as Engine>::Scalar>,
-            S<E1, EE1>,
-            S<E2, EE2>,
-        > = serde_json::from_str(&json_string_compressed_snark).expect("Failed to parse JSON");
+        let json_data_compressed_snark: CompressedSNARK<E1, E2, C1, C2, S<E1, EE1>, S<E2, EE2>> =
+            serde_json::from_str(&json_string_compressed_snark)?;
         // println!("{:?}", json_data_compressed_snark);
 
         // ! Serialize into Bytes
-        let bytes_compressed_snark = postcard::to_allocvec(&json_data_compressed_snark).unwrap();
+        let bytes_compressed_snark = postcard::to_allocvec(&json_data_compressed_snark)?;
         // println!("{:?}", bytes_compressed_snark);
 
-        // ! Write bytes to file
-        let output_path_compressed_snark = "./src/resources/bin/compressed_snark.bin";
-        fs::write(output_path_compressed_snark, bytes_compressed_snark)
-            .expect("Failed to write binary file");
-        // ! Read bytes from file
-        let bytes_from_file_compressed_snark = fs::read(output_path_compressed_snark).unwrap();
+        // ! Write bytes to BIN file
+        let output_bin_path_compressed_snark =
+            format!("./src/resources/bin/{}/compressed_snark.bin", &path);
+        fs::write(
+            output_bin_path_compressed_snark.clone(),
+            &bytes_compressed_snark,
+        )?;
+
+        // ! Write bytes to TXT file
+        let bytes_string_compressed_snark = serde_json::to_string(&bytes_compressed_snark)?;
+        let output_txt_path_compressed_snark =
+            format!("./src/resources/txt/{}/compressed_snark.txt", &path);
+        fs::write(
+            output_txt_path_compressed_snark,
+            bytes_string_compressed_snark,
+        )?;
+
+        // ! Read bytes from BIN file
+        let bytes_from_file_compressed_snark = fs::read(output_bin_path_compressed_snark.clone())?;
 
         // ! Just a check that it is in right format and it can be deserialized
-        let deserialized_value_compressed_snark =
-            deserializer::deserialize_compressed_snark::<E1, E2, EE1, EE2>(
-                &bytes_from_file_compressed_snark,
-            )
-            .unwrap();
+        deserializer::deserialize_compressed_snark::<E1, E2, EE1, EE2>(
+            &bytes_from_file_compressed_snark,
+        )?;
 
-        bytes_from_file_compressed_snark
+        Ok(bytes_from_file_compressed_snark)
     }
 }
