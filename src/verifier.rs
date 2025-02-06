@@ -1,21 +1,27 @@
 extern crate alloc;
 
-use crate::deserializer::{
-    deserialize_compressed_snark, deserialize_pubs, deserialize_vk, DeserializeError,
+use crate::{
+    ck_primary::CK_PRIMARY,
+    ck_secondary::CK_SECONDARY,
+    deserializer::{
+        deserialize_compressed_snark, deserialize_pubs, deserialize_vk, DeserializeError,
+    },
 };
 use alloc::vec::Vec;
 use ff::Field;
-use nova_snark::{
+use no_std_nova_snark::{
     errors::NovaError,
     provider::{PallasEngine, VestaEngine},
     traits::Engine,
 };
-use pasta_curves::pallas::Scalar as PallasScalar;
-use pasta_curves::vesta::Scalar as VestaScalar;
+use pasta_curves::{
+    group::GroupEncoding, pallas::Scalar as PallasScalar, vesta::Scalar as VestaScalar, EpAffine,
+    EqAffine,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+type EE<E> = no_std_nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
 #[derive(Error, Debug)]
 pub enum NovaVerifierError {
@@ -128,6 +134,9 @@ fn verify_compressed_snark_pallas_vesta(
 
     let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
+    vk.vk_primary.vk_ee.ck_v.ck = get_ck_primary();
+    vk.vk_secondary.vk_ee.ck_v.ck = get_ck_secondary();
+
     compressed_snark.verify(
         &mut vk,
         num_of_steps,
@@ -169,6 +178,9 @@ where
 
     let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
+    vk.vk_primary.vk_ee.ck_v.ck = get_ck_secondary();
+    vk.vk_secondary.vk_ee.ck_v.ck = get_ck_primary();
+
     compressed_snark.verify(
         &mut vk,
         num_of_steps,
@@ -177,4 +189,24 @@ where
         &[z0_secondary],
     )?;
     Ok(())
+}
+
+fn get_ck_primary() -> Vec<EpAffine> {
+    CK_PRIMARY
+        .iter()
+        .filter_map(|hex| {
+            let bytes = hex::decode(hex).ok()?; // Convert hex string to bytes
+            EpAffine::from_bytes(&bytes.try_into().ok()?).into() // Convert bytes to EpAffine
+        })
+        .collect()
+}
+
+fn get_ck_secondary() -> Vec<EqAffine> {
+    CK_SECONDARY
+        .iter()
+        .filter_map(|hex| {
+            let bytes = hex::decode(hex).ok()?; // Convert hex string to bytes
+            EqAffine::from_bytes(&bytes.try_into().ok()?).into() // Convert bytes to EpAffine
+        })
+        .collect()
 }

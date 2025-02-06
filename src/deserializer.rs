@@ -2,13 +2,13 @@ extern crate alloc;
 
 use crate::verifier::Pubs;
 use alloc::vec::Vec;
-use nova_snark::{
+use no_std_nova_snark::{
     traits::{circuit::GenericCircuit, evaluation::EvaluationEngineTrait, Engine},
     CompressedSNARK, VerifierKey,
 };
 use thiserror::Error;
 
-type S<E, EE> = nova_snark::spartan::snark::RelaxedR1CSSNARK<E, EE>;
+type S<E, EE> = no_std_nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
 
 #[derive(Error, Debug)]
 pub enum DeserializeError {

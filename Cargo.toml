@@ -5,12 +5,13 @@ edition = "2021"
 
 [dependencies]
 # ! Nova dependencies
-nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "no_std", default-features = false }
+no_std_nova_snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "public_fields", default-features = false }
 ff = { version = "0.13.0", default-features = false }
 postcard = { version = "1.1.1", default-features = false, features = ["alloc"] }
 thiserror = { version = "2.0.9", default-features = false }
 pasta_curves = { version = "0.5.1", default-features = false }
 serde = { version = "1.0.0", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 
 [dev-dependencies]
 serde_json = "1.0.137"
