@@ -66,13 +66,7 @@ pub fn verify_compressed_snark_pallas_vesta(
     vk.vk_primary.vk_ee.ck_v.ck = get_ck_primary();
     vk.vk_secondary.vk_ee.ck_v.ck = get_ck_secondary();
 
-    compressed_snark.verify(
-        &mut vk,
-        num_of_steps,
-        // TODO -> check if this is always ONE to ZERO
-        &[z0_primary],
-        &[z0_secondary],
-    )?;
+    compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
     Ok(())
 }
 
@@ -94,13 +88,7 @@ where
     vk.vk_primary.vk_ee.ck_v.ck = get_ck_secondary();
     vk.vk_secondary.vk_ee.ck_v.ck = get_ck_primary();
 
-    compressed_snark.verify(
-        &mut vk,
-        num_of_steps,
-        // TODO -> check if this is always ONE to ZERO
-        &[z0_primary],
-        &[z0_secondary],
-    )?;
+    compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
     Ok(())
 }
 
@@ -108,8 +96,8 @@ fn get_ck_primary() -> Vec<EpAffine> {
     CK_PRIMARY
         .iter()
         .filter_map(|hex| {
-            let bytes = hex::decode(hex).ok()?; // Convert hex string to bytes
-            EpAffine::from_bytes(&bytes.try_into().ok()?).into() // Convert bytes to EpAffine
+            let bytes = hex::decode(hex).ok()?;
+            EpAffine::from_bytes(&bytes.try_into().ok()?).into()
         })
         .collect()
 }
@@ -118,8 +106,8 @@ fn get_ck_secondary() -> Vec<EqAffine> {
     CK_SECONDARY
         .iter()
         .filter_map(|hex| {
-            let bytes = hex::decode(hex).ok()?; // Convert hex string to bytes
-            EqAffine::from_bytes(&bytes.try_into().ok()?).into() // Convert bytes to EpAffine
+            let bytes = hex::decode(hex).ok()?;
+            EqAffine::from_bytes(&bytes.try_into().ok()?).into()
         })
         .collect()
 }

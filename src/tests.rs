@@ -47,8 +47,6 @@ mod tests {
         let mut bytes_from_file_compressed_snark = fs::read(bin_path_compressed_snark)?;
 
         bytes_from_file_compressed_snark[11] = 11;
-        // ! CAN PANIC when add line below !!!
-        // bytes_from_file_compressed_snark[0] = 11;
 
         let result =
             deserializer::deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
@@ -117,12 +115,10 @@ mod tests {
 
     fn handle_pubs(path: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let bin_path_pubs = format!("./resources/{}/pubs.bin", &path);
-        // ! Read bytes from file
+        // ! Read bytes from BIN file
         let bytes_from_file_pubs = fs::read(bin_path_pubs)?;
-
         // ! Just a check that it is in right format and it can be deserialized
         deserializer::deserialize_pubs(&bytes_from_file_pubs)?;
-
         Ok(bytes_from_file_pubs)
     }
 
@@ -141,10 +137,8 @@ mod tests {
         let bin_path_vk = format!("./resources/{}/vk.bin", &path);
         // ! Read bytes from BIN file
         let bytes_from_file_vk = fs::read(bin_path_vk)?;
-
         // ! Just a check that it is in right format and it can be deserialized
         deserializer::deserialize_vk::<E1, E2, EE1, EE2>(&bytes_from_file_vk)?;
-
         Ok(bytes_from_file_vk)
     }
 
@@ -163,12 +157,10 @@ mod tests {
         let bin_path_compressed_snark = format!("./resources/{}/compressed_snark.bin", &path);
         // ! Read bytes from BIN file
         let bytes_from_file_compressed_snark = fs::read(bin_path_compressed_snark)?;
-
         // ! Just a check that it is in right format and it can be deserialized
         deserializer::deserialize_compressed_snark::<E1, E2, EE1, EE2>(
             &bytes_from_file_compressed_snark,
         )?;
-
         Ok(bytes_from_file_compressed_snark)
     }
 }
