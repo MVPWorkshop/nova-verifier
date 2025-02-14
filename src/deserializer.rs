@@ -1,31 +1,18 @@
 extern crate alloc;
 
-use crate::verifier::Pubs;
+use crate::{errors::DeserializeError, pubs::Pubs};
 use alloc::vec::Vec;
 use no_std_nova_snark::{
     traits::{circuit::GenericCircuit, evaluation::EvaluationEngineTrait, Engine},
     CompressedSNARK, VerifierKey,
 };
-use thiserror::Error;
 
 type S<E, EE> = no_std_nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
-
-#[derive(Error, Debug)]
-pub enum DeserializeError {
-    // ! TODO -> move this in errors.rs and make it work properly
-    #[error("Deserialization of proof failed")]
-    InvalidProof,
-    #[error("Deserialization of public inputs failed")]
-    InvalidPubs,
-    #[error("Deserialization of verification key failed")]
-    InvalidVerifyingKey,
-}
 
 pub fn deserialize_pubs(pubs_bytes: &Vec<u8>) -> Result<Pubs, DeserializeError> {
     postcard::from_bytes(&pubs_bytes).map_err(|_| DeserializeError::InvalidPubs)
 }
 
-// ! TODO -> Send it all together as a CompressedStark, instead of E1, E2, EE1, EE2
 pub fn deserialize_compressed_snark<E1, E2, EE1, EE2>(
     compressed_snark_bytes: &Vec<u8>,
 ) -> Result<

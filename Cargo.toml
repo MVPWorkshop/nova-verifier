@@ -2,9 +2,18 @@
 name = "nova-verifier"
 version = "0.1.0"
 edition = "2021"
+authors = ["Milos Djurica <milos.djurica@mvpworkshop.co>"]
+description = "A short description of your crate."
+license = "MIT"
+repository = "https://github.com/MVPWorkshop/nova-verifier"
+documentation = "https://docs.rs/your_crate"
+keywords = ["cryptography", "no_std", "nova", "SNARK", "zero knowledge", "zk"]
+categories = ["no-std", "cryptography"]
+readme = "README.md"
+exclude = [".github", ".gitignore", "tests/*", "examples/*"]
+
 
 [dependencies]
-# ! Nova dependencies
 no_std_nova_snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "no_std", default-features = false }
 ff = { version = "0.13.0", default-features = false }
 postcard = { version = "1.1.1", default-features = false, features = ["alloc"] }
@@ -15,8 +24,3 @@ hex = { version = "0.4.3", default-features = false }
 
 [dev-dependencies]
 serde_json = "1.0.137"
-
-
-# [features]
-# default = ["std"]
-# std = []

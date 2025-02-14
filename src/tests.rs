@@ -3,8 +3,10 @@ mod tests {
 
     extern crate std;
     use crate::{
-        deserializer::{self, deserialize_pubs, DeserializeError},
-        verifier::{verify_nova, CurveName},
+        deserializer::{self, deserialize_pubs},
+        errors::DeserializeError,
+        pubs::CurveName,
+        verifier::verify_nova,
     };
     use no_std_nova_snark::{
         provider::{PallasEngine, VestaEngine},
@@ -21,8 +23,8 @@ mod tests {
 
     #[test]
     fn test_success() -> Result<(), Box<dyn std::error::Error>> {
-        // test_full("quadratic")?;
         test_full("cubic")?;
+        // test_full("quadratic")?;
         Ok(())
     }
 
