@@ -134,7 +134,7 @@ mod tests {
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let bin_path_vk = format!("./resources/{}/vk.bin", &path);
+        let bin_path_vk = format!("./vk_fixed.bin");
         // ! Read bytes from BIN file
         let bytes_from_file_vk = fs::read(bin_path_vk)?;
         // ! Just a check that it is in right format and it can be deserialized
