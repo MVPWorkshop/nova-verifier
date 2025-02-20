@@ -123,8 +123,6 @@ mod tests {
         Ok(bytes_from_file_pubs)
     }
 
-    use pasta_curves::EpAffine;
-
     // ! Helper functions
     fn handle_vk<E1, E2, C1, C2, EE1, EE2>(
         path: &str,
@@ -137,7 +135,7 @@ mod tests {
         EE1: EvaluationEngineTrait<E1>,
         EE2: EvaluationEngineTrait<E2>,
     {
-        let bin_path_vk = format!("./vk_fixed.bin");
+        let bin_path_vk = format!("./resources/{}/vk.bin", &path);
         // ! Read bytes from BIN file
         let bytes_from_file_vk = fs::read(bin_path_vk)?;
         // ! Just a check that it is in right format and it can be deserialized

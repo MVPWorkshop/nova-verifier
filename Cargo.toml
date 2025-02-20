@@ -22,9 +22,8 @@ thiserror = { version = "2.0.9", default-features = false }
 pasta_curves = { version = "0.5.1", default-features = false }
 serde = { version = "1.0.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
-serde_json = { version = "*" }
-once_cell = { version = "*", default-features = false, features = [
-    "critical-section",
+lazy_static = { version = "*", default-features = false, features = [
+    "spin_no_std",
 ] }
 
 [dev-dependencies]
