@@ -125,7 +125,6 @@ where
 }
 
 use once_cell::sync::Lazy;
-use spin::Mutex;
 
 pub static CK_PRIMARY_PARSED: Lazy<Vec<EpAffine>> = Lazy::new(|| {
     CK_PRIMARY
