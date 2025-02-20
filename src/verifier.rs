@@ -49,8 +49,8 @@ pub fn verify_nova(
         ),
     }
 }
-use std::eprintln;
 use std::time::Instant;
+use std::{eprintln, fs};
 
 pub fn verify_compressed_snark_pallas_vesta(
     vk_bytes: &Vec<u8>,
@@ -72,11 +72,13 @@ pub fn verify_compressed_snark_pallas_vesta(
     let duration_deserialize_vk = start_deserialize_vk.elapsed();
 
     let start_ck_primary = Instant::now();
-    vk.vk_primary.vk_ee.ck_v.ck = get_ck_primary();
+    vk.vk_primary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+
+    vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
     let duration_ck_primary = start_ck_primary.elapsed();
 
     let start_ck_secondary = Instant::now();
-    vk.vk_secondary.vk_ee.ck_v.ck = get_ck_secondary();
+    // vk.vk_secondary.vk_ee.ck_v.ck = get_ck_secondary();
     let duration_ck_secondary = start_ck_secondary.elapsed();
 
     let start_verify = Instant::now();
@@ -113,14 +115,19 @@ where
 
     let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
-    vk.vk_primary.vk_ee.ck_v.ck = get_ck_secondary();
-    vk.vk_secondary.vk_ee.ck_v.ck = get_ck_primary();
+    vk.vk_primary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
+
+    vk.vk_secondary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+    // vk.vk_secondary.vk_ee.ck_v.ck = get_ck_primary();
 
     compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
     Ok(())
 }
 
-fn get_ck_primary() -> Vec<EpAffine> {
+use once_cell::sync::Lazy;
+use spin::Mutex;
+
+pub static CK_PRIMARY_PARSED: Lazy<Vec<EpAffine>> = Lazy::new(|| {
     CK_PRIMARY
         .iter()
         .filter_map(|hex| {
@@ -128,9 +135,9 @@ fn get_ck_primary() -> Vec<EpAffine> {
             EpAffine::from_bytes(&bytes.try_into().ok()?).into()
         })
         .collect()
-}
+});
 
-fn get_ck_secondary() -> Vec<EqAffine> {
+pub static CK_SECONDARY_PARSED: Lazy<Vec<EqAffine>> = Lazy::new(|| {
     CK_SECONDARY
         .iter()
         .filter_map(|hex| {
@@ -138,7 +145,32 @@ fn get_ck_secondary() -> Vec<EqAffine> {
             EqAffine::from_bytes(&bytes.try_into().ok()?).into()
         })
         .collect()
-}
+});
+
+// fn get_ck_primary() -> Vec<EpAffine> {
+//     let ck = CK_PRIMARY
+//         .iter()
+//         .filter_map(|hex| {
+//             let bytes = hex::decode(hex).ok()?;
+//             EpAffine::from_bytes(&bytes.try_into().ok()?).into()
+//         })
+//         .collect();
+
+//     // let js = serde_json::to_string_pretty(&ck).unwrap();
+//     // fs::write("ck_primary.json", js).unwrap();
+
+//     ck
+// }
+
+// fn get_ck_secondary() -> Vec<EqAffine> {
+//     CK_SECONDARY
+//         .iter()
+//         .filter_map(|hex| {
+//             let bytes = hex::decode(hex).ok()?;
+//             EqAffine::from_bytes(&bytes.try_into().ok()?).into()
+//         })
+//         .collect()
+// }
 
 fn get_z0<E: Engine>(z0: Z0Values) -> E::Scalar {
     match z0 {

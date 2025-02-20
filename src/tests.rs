@@ -24,6 +24,7 @@ mod tests {
     #[test]
     fn test_success() -> Result<(), Box<dyn std::error::Error>> {
         test_full("cubic")?;
+        test_full("cubic")?;
         // test_full("quadratic")?;
         Ok(())
     }
@@ -121,6 +122,8 @@ mod tests {
         deserializer::deserialize_pubs(&bytes_from_file_pubs)?;
         Ok(bytes_from_file_pubs)
     }
+
+    use pasta_curves::EpAffine;
 
     // ! Helper functions
     fn handle_vk<E1, E2, C1, C2, EE1, EE2>(
