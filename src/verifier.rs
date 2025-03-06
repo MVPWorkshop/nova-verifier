@@ -10,7 +10,7 @@ use crate::{
 use alloc::vec::Vec;
 use ff::Field;
 use lazy_static::lazy_static;
-use no_std_nova_snark::{
+use nova_snark::{
     provider::{PallasEngine, VestaEngine},
     traits::Engine,
 };
@@ -19,7 +19,7 @@ use pasta_curves::{
     EqAffine,
 };
 
-type EE<E> = no_std_nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
 pub fn verify_nova(
     vk_bytes: &Vec<u8>,

@@ -8,7 +8,7 @@ mod tests {
         pubs::CurveName,
         verifier::verify_nova,
     };
-    use no_std_nova_snark::{
+    use nova_snark::{
         provider::{PallasEngine, VestaEngine},
         traits::{
             circuit::{GenericCircuit, StepCircuit},
@@ -19,7 +19,7 @@ mod tests {
     use pasta_curves::{Fp, Fq};
     use std::{boxed::Box, format, fs, vec::Vec};
 
-    type EE<E> = no_std_nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+    type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
     #[test]
     fn test_success() -> Result<(), Box<dyn std::error::Error>> {
