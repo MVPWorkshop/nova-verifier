@@ -1,13 +1,67 @@
 extern crate alloc;
 
 use crate::{errors::DeserializeError, pubs::Pubs};
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
+use core::marker::PhantomData;
+use ff::PrimeField;
+use nova_snark::frontend::num::AllocatedNum;
+use nova_snark::frontend::ConstraintSystem;
+use nova_snark::frontend::SynthesisError;
+use nova_snark::traits::circuit::StepCircuit;
 use nova_snark::{
     nova::{CompressedSNARK, VerifierKey},
-    traits::{circuit::GenericCircuit, evaluation::EvaluationEngineTrait, Engine},
+    traits::{circuit::TrivialCircuit, evaluation::EvaluationEngineTrait, Engine},
 };
 
 type S<E, EE> = nova_snark::spartan::ppsnark::RelaxedR1CSSNARK<E, EE>;
+
+#[derive(Clone, Debug, Default)]
+pub struct CubicCircuit<F: PrimeField> {
+    _p: PhantomData<F>,
+}
+
+impl<F: PrimeField> StepCircuit<F> for CubicCircuit<F> {
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn synthesize<CS: ConstraintSystem<F>>(
+        &self,
+        cs: &mut CS,
+        z: &[AllocatedNum<F>],
+    ) -> Result<Vec<AllocatedNum<F>>, SynthesisError> {
+        // Consider a cubic equation: `x^3 + x + 5 = y`, where `x` and `y` are respectively the input and output.
+        let x = &z[0];
+        let x_sq = x.square(cs.namespace(|| "x_sq"))?;
+        let x_cu = x_sq.mul(cs.namespace(|| "x_cu"), x)?;
+        let y = AllocatedNum::alloc(cs.namespace(|| "y"), || {
+            Ok(x_cu.get_value().unwrap() + x.get_value().unwrap() + F::from(5u64))
+        })?;
+
+        cs.enforce(
+            || "y = x^3 + x + 5",
+            |lc| {
+                lc + x_cu.get_variable()
+                    + x.get_variable()
+                    + CS::one()
+                    + CS::one()
+                    + CS::one()
+                    + CS::one()
+                    + CS::one()
+            },
+            |lc| lc + CS::one(),
+            |lc| lc + y.get_variable(),
+        );
+
+        Ok(vec![y])
+    }
+}
+
+impl<F: PrimeField> CubicCircuit<F> {
+    pub fn output(&self, z: &[F]) -> Vec<F> {
+        vec![z[0] * z[0] * z[0] + z[0] + F::from(5u64)]
+    }
+}
 
 pub fn deserialize_pubs(pubs_bytes: &Vec<u8>) -> Result<Pubs, DeserializeError> {
     postcard::from_bytes(&pubs_bytes).map_err(|_| DeserializeError::InvalidPubs)
@@ -19,8 +73,8 @@ pub fn deserialize_compressed_snark<E1, E2, EE1, EE2>(
     CompressedSNARK<
         E1,
         E2,
-        GenericCircuit<<E1 as Engine>::Scalar>,
-        GenericCircuit<<E2 as Engine>::Scalar>,
+        TrivialCircuit<<E1 as Engine>::Scalar>,
+        CubicCircuit<<E2 as Engine>::Scalar>,
         S<E1, EE1>,
         S<E2, EE2>,
     >,
@@ -42,8 +96,8 @@ pub fn deserialize_vk<E1, E2, EE1, EE2>(
     VerifierKey<
         E1,
         E2,
-        GenericCircuit<<E1 as Engine>::Scalar>,
-        GenericCircuit<<E2 as Engine>::Scalar>,
+        TrivialCircuit<<E1 as Engine>::Scalar>,
+        CubicCircuit<<E2 as Engine>::Scalar>,
         S<E1, EE1>,
         S<E2, EE2>,
     >,

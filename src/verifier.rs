@@ -50,8 +50,8 @@ pub fn verify_nova(
         ),
     }
 }
-use std::eprintln;
-use std::time::Instant;
+// use std::eprintln;
+// use std::time::Instant;
 
 pub fn verify_compressed_snark_pallas_vesta(
     vk_bytes: &Vec<u8>,
@@ -60,42 +60,41 @@ pub fn verify_compressed_snark_pallas_vesta(
     z0_primary: PallasScalar,
     z0_secondary: VestaScalar,
 ) -> Result<(), NovaVerifierError> {
-    let start_total = Instant::now();
+    // let start_total = Instant::now();
 
-    let start_deserialize_snark = Instant::now();
+    // let start_deserialize_snark = Instant::now();
     let compressed_snark = deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
         &compressed_snark_bytes,
     )?;
-    let duration_deserialize_snark = start_deserialize_snark.elapsed();
+    // let duration_deserialize_snark = start_deserialize_snark.elapsed();
 
-    let start_deserialize_vk = Instant::now();
+    // let start_deserialize_vk = Instant::now();
     let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
-    let duration_deserialize_vk = start_deserialize_vk.elapsed();
+    // let duration_deserialize_vk = start_deserialize_vk.elapsed();
 
-    let start_ck_primary = Instant::now();
-    vk.vk_primary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+    // let start_ck_primary = Instant::now();
+    // vk.vk_primary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+    // let duration_ck_primary = start_ck_primary.elapsed();
 
-    vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
-    let duration_ck_primary = start_ck_primary.elapsed();
+    // let start_ck_secondary = Instant::now();
+    // vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
+    // let duration_ck_secondary = start_ck_secondary.elapsed();
 
-    let start_ck_secondary = Instant::now();
-    let duration_ck_secondary = start_ck_secondary.elapsed();
-
-    let start_verify = Instant::now();
+    // let start_verify = Instant::now();
     compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
-    let duration_verify = start_verify.elapsed();
+    // let duration_verify = start_verify.elapsed();
 
-    let total_duration = start_total.elapsed();
+    // let total_duration = start_total.elapsed();
 
-    eprintln!(
-        "deserialize_compressed_snark: {:?}",
-        duration_deserialize_snark
-    );
-    eprintln!("deserialize_vk: {:?}", duration_deserialize_vk);
-    eprintln!("get_ck_primary: {:?}", duration_ck_primary);
-    eprintln!("get_ck_secondary: {:?}", duration_ck_secondary);
-    eprintln!("compressed_snark.verify: {:?}", duration_verify);
-    eprintln!("Total time: {:?}", total_duration);
+    // eprintln!(
+    //     "deserialize_compressed_snark: {:?}",
+    //     duration_deserialize_snark
+    // );
+    // eprintln!("deserialize_vk: {:?}", duration_deserialize_vk);
+    // // eprintln!("get_ck_primary: {:?}", duration_ck_primary);
+    // // eprintln!("get_ck_secondary: {:?}", duration_ck_secondary);
+    // eprintln!("compressed_snark.verify: {:?}", duration_verify);
+    // eprintln!("Total time: {:?}", total_duration);
 
     Ok(())
 }
@@ -115,9 +114,9 @@ where
 
     let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(&vk_bytes)?;
 
-    vk.vk_primary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
+    // vk.vk_primary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
 
-    vk.vk_secondary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+    // vk.vk_secondary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
 
     compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
     Ok(())
