@@ -10,7 +10,7 @@ use crate::{
 use alloc::vec::Vec;
 use ff::Field;
 use lazy_static::lazy_static;
-use no_std_nova_snark::{
+use nova_snark::{
     provider::{PallasEngine, VestaEngine},
     traits::Engine,
 };
@@ -19,7 +19,7 @@ use pasta_curves::{
     EqAffine,
 };
 
-type EE<E> = no_std_nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
 pub fn verify_nova(
     vk_bytes: &Vec<u8>,
@@ -74,15 +74,14 @@ pub fn verify_compressed_snark_pallas_vesta(
 
     let start_ck_primary = Instant::now();
     vk.vk_primary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
-
-    vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
     let duration_ck_primary = start_ck_primary.elapsed();
 
     let start_ck_secondary = Instant::now();
+    vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
     let duration_ck_secondary = start_ck_secondary.elapsed();
 
     let start_verify = Instant::now();
-    compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
+    compressed_snark.verify(&vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
     let duration_verify = start_verify.elapsed();
 
     let total_duration = start_total.elapsed();
