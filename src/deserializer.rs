@@ -16,14 +16,7 @@ pub fn deserialize_pubs(pubs_bytes: &Vec<u8>) -> Result<Pubs, DeserializeError> 
 pub fn deserialize_compressed_snark<E1, E2, EE1, EE2>(
     compressed_snark_bytes: &Vec<u8>,
 ) -> Result<
-    CompressedSNARK<
-        E1,
-        E2,
-        TrivialCircuit<<E1 as Engine>::Scalar>,
-        TrivialCircuit<<E2 as Engine>::Scalar>,
-        S<E1, EE1>,
-        S<E2, EE2>,
-    >,
+    CompressedSNARK<E1, E2, TrivialCircuit<<E1 as Engine>::Scalar>, S<E1, EE1>, S<E2, EE2>>,
     DeserializeError,
 >
 where
@@ -39,14 +32,7 @@ where
 pub fn deserialize_vk<E1, E2, EE1, EE2>(
     vk_bytes: &Vec<u8>,
 ) -> Result<
-    VerifierKey<
-        E1,
-        E2,
-        TrivialCircuit<<E1 as Engine>::Scalar>,
-        TrivialCircuit<<E2 as Engine>::Scalar>,
-        S<E1, EE1>,
-        S<E2, EE2>,
-    >,
+    VerifierKey<E1, E2, TrivialCircuit<<E1 as Engine>::Scalar>, S<E1, EE1>, S<E2, EE2>>,
     DeserializeError,
 >
 where

@@ -9,14 +9,16 @@ mod tests {
         verifier::verify_nova,
     };
     use nova_snark::{
-        provider::{PallasEngine, VestaEngine},
+        provider::{
+            pasta::{pallas::Scalar as PallasScalar, vesta::Scalar as VestaScalar},
+            PallasEngine, VestaEngine,
+        },
         traits::{
             circuit::{StepCircuit, TrivialCircuit},
             evaluation::EvaluationEngineTrait,
             Engine,
         },
     };
-    use pasta_curves::{Fp, Fq};
     use std::{boxed::Box, format, fs, vec::Vec};
 
     type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
@@ -77,8 +79,8 @@ mod tests {
                 vk_bytes = handle_vk::<
                     PallasEngine,
                     VestaEngine,
-                    TrivialCircuit<Fq>,
-                    TrivialCircuit<Fp>,
+                    TrivialCircuit<PallasScalar>,
+                    TrivialCircuit<VestaScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
@@ -86,8 +88,8 @@ mod tests {
                 snark_bytes = handle_compressed_snark::<
                     PallasEngine,
                     VestaEngine,
-                    TrivialCircuit<Fq>,
-                    TrivialCircuit<Fp>,
+                    TrivialCircuit<PallasScalar>,
+                    TrivialCircuit<VestaScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
@@ -96,16 +98,16 @@ mod tests {
                 vk_bytes = handle_vk::<
                     VestaEngine,
                     PallasEngine,
-                    TrivialCircuit<Fp>,
-                    TrivialCircuit<Fq>,
+                    TrivialCircuit<VestaScalar>,
+                    TrivialCircuit<PallasScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
                 snark_bytes = handle_compressed_snark::<
                     VestaEngine,
                     PallasEngine,
-                    TrivialCircuit<Fp>,
-                    TrivialCircuit<Fq>,
+                    TrivialCircuit<VestaScalar>,
+                    TrivialCircuit<PallasScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
