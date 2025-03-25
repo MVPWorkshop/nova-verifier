@@ -25,22 +25,22 @@ mod tests {
 
     #[test]
     fn test_success() -> Result<(), Box<dyn std::error::Error>> {
-        test_full("test")?;
-        test_full("test")?;
+        test_full("check")?;
+        test_full("check")?;
         // test_full("quadratic")?;
         Ok(())
     }
 
     #[test]
     fn test_bad_pubs_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-        test_pubs_deserialization_fails("test")?;
+        test_pubs_deserialization_fails("check")?;
         // test_pubs_deserialization_fails("quadratic")?;
         Ok(())
     }
 
     // #[test]
     // fn test_bad_proof_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-    //     test_proof_deserialization_fails("test")?;
+    //     test_proof_deserialization_fails("check")?;
     //     // test_proof_deserialization_fails("quadratic")?;
     //     Ok(())
     // }

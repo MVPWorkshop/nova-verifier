@@ -29,7 +29,6 @@ pub fn verify_nova(
         first_curve,
         num_of_steps,
         z0_primary,
-        z0_secondary,
     } = deserialize_pubs(&pubs_bytes)?;
 
     match first_curve {
@@ -44,7 +43,6 @@ pub fn verify_nova(
             snark_bytes,
             num_of_steps,
             get_z0::<VestaEngine>(z0_primary),
-            get_z0::<PallasEngine>(z0_secondary),
         ),
     }
 }
@@ -101,7 +99,6 @@ pub fn verify_compressed_snark_vesta_pallas(
     compressed_snark_bytes: &Vec<u8>,
     num_of_steps: usize,
     z0_primary: VestaScalar,
-    z0_secondary: PallasScalar,
 ) -> Result<(), NovaVerifierError>
 where
 {
