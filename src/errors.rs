@@ -1,4 +1,4 @@
-use no_std_nova_snark::errors::NovaError;
+use nova_snark::errors::NovaError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

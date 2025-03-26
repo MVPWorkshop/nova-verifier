@@ -9,28 +9,31 @@ use crate::{
 };
 use alloc::vec::Vec;
 use ff::Field;
-use no_std_nova_snark::{
-    provider::{PallasEngine, VestaEngine},
+use halo2curves::group::GroupEncoding;
+use lazy_static::lazy_static;
+use nova_snark::{
+    provider::{
+        pasta::{
+            pallas::{Affine as PallasAffine, Scalar as PallasScalar},
+            vesta::{Affine as VestaAffine, Scalar as VestaScalar},
+        },
+        PallasEngine, VestaEngine,
+    },
     traits::Engine,
 };
-use pasta_curves::{
-    group::GroupEncoding, pallas::Scalar as PallasScalar, vesta::Scalar as VestaScalar, EpAffine,
-    EqAffine,
-};
 
-type EE<E> = no_std_nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
 pub fn verify_nova(
-    vk_bytes: &Vec<u8>,
-    snark_bytes: &Vec<u8>,
-    pubs_bytes: &Vec<u8>,
+    vk_bytes: &[u8],
+    snark_bytes: &[u8],
+    pubs_bytes: &[u8],
 ) -> Result<(), NovaVerifierError> {
     let Pubs {
         first_curve,
         num_of_steps,
         z0_primary,
-        z0_secondary,
-    } = deserialize_pubs(&pubs_bytes)?;
+    } = deserialize_pubs(pubs_bytes)?;
 
     match first_curve {
         CurveName::Pallas => verify_compressed_snark_pallas_vesta(
@@ -38,78 +41,52 @@ pub fn verify_nova(
             snark_bytes,
             num_of_steps,
             get_z0::<PallasEngine>(z0_primary),
-            get_z0::<VestaEngine>(z0_secondary),
         ),
         CurveName::Vesta => verify_compressed_snark_vesta_pallas(
             vk_bytes,
             snark_bytes,
             num_of_steps,
             get_z0::<VestaEngine>(z0_primary),
-            get_z0::<PallasEngine>(z0_secondary),
         ),
     }
 }
 
 pub fn verify_compressed_snark_pallas_vesta(
-    vk_bytes: &Vec<u8>,
-    compressed_snark_bytes: &Vec<u8>,
+    vk_bytes: &[u8],
+    compressed_snark_bytes: &[u8],
     num_of_steps: usize,
     z0_primary: PallasScalar,
-    z0_secondary: VestaScalar,
 ) -> Result<(), NovaVerifierError> {
     let compressed_snark = deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
-        &compressed_snark_bytes,
+        compressed_snark_bytes,
     )?;
+    let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(vk_bytes)?;
 
-    let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
+    vk.vk_primary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+    vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
 
-    vk.vk_primary.vk_ee.ck_v.ck = get_ck_primary();
-    vk.vk_secondary.vk_ee.ck_v.ck = get_ck_secondary();
-
-    compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
+    compressed_snark.verify(&vk, num_of_steps, &[z0_primary])?;
     Ok(())
 }
 
 pub fn verify_compressed_snark_vesta_pallas(
-    vk_bytes: &Vec<u8>,
-    compressed_snark_bytes: &Vec<u8>,
+    vk_bytes: &[u8],
+    compressed_snark_bytes: &[u8],
     num_of_steps: usize,
     z0_primary: VestaScalar,
-    z0_secondary: PallasScalar,
 ) -> Result<(), NovaVerifierError>
 where
 {
     let compressed_snark = deserialize_compressed_snark::<VestaEngine, PallasEngine, EE<_>, EE<_>>(
-        &compressed_snark_bytes,
+        compressed_snark_bytes,
     )?;
+    let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(vk_bytes)?;
 
-    let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(&vk_bytes)?;
+    vk.vk_primary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
+    vk.vk_secondary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
 
-    vk.vk_primary.vk_ee.ck_v.ck = get_ck_secondary();
-    vk.vk_secondary.vk_ee.ck_v.ck = get_ck_primary();
-
-    compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary], &[z0_secondary])?;
+    compressed_snark.verify(&vk, num_of_steps, &[z0_primary])?;
     Ok(())
-}
-
-fn get_ck_primary() -> Vec<EpAffine> {
-    CK_PRIMARY
-        .iter()
-        .filter_map(|hex| {
-            let bytes = hex::decode(hex).ok()?;
-            EpAffine::from_bytes(&bytes.try_into().ok()?).into()
-        })
-        .collect()
-}
-
-fn get_ck_secondary() -> Vec<EqAffine> {
-    CK_SECONDARY
-        .iter()
-        .filter_map(|hex| {
-            let bytes = hex::decode(hex).ok()?;
-            EqAffine::from_bytes(&bytes.try_into().ok()?).into()
-        })
-        .collect()
 }
 
 fn get_z0<E: Engine>(z0: Z0Values) -> E::Scalar {
@@ -117,4 +94,25 @@ fn get_z0<E: Engine>(z0: Z0Values) -> E::Scalar {
         Z0Values::ZERO => E::Scalar::ZERO,
         Z0Values::ONE => E::Scalar::ONE,
     }
+}
+
+lazy_static! {
+    pub static ref CK_PRIMARY_PARSED: Vec<PallasAffine> = {
+        CK_PRIMARY
+            .iter()
+            .filter_map(|hex| {
+                let bytes: [u8; 32] = hex::decode(hex).ok()?.try_into().ok()?;
+                PallasAffine::from_bytes(&bytes.try_into().ok()?).into()
+            })
+            .collect()
+    };
+    pub static ref CK_SECONDARY_PARSED: Vec<VestaAffine> = {
+        CK_SECONDARY
+            .iter()
+            .filter_map(|hex| {
+                let bytes: [u8; 32] = hex::decode(hex).ok()?.try_into().ok()?;
+                VestaAffine::from_bytes(&bytes.try_into().ok()?).into()
+            })
+            .collect()
+    };
 }

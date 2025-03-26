@@ -17,5 +17,4 @@ pub struct Pubs {
     pub first_curve: CurveName,
     pub num_of_steps: usize,
     pub z0_primary: Z0Values,
-    pub z0_secondary: Z0Values,
 }

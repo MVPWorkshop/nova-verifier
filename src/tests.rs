@@ -8,37 +8,46 @@ mod tests {
         pubs::CurveName,
         verifier::verify_nova,
     };
-    use no_std_nova_snark::{
-        provider::{PallasEngine, VestaEngine},
+    use nova_snark::{
+        provider::{
+            pasta::{pallas::Scalar as PallasScalar, vesta::Scalar as VestaScalar},
+            PallasEngine, VestaEngine,
+        },
         traits::{
-            circuit::{GenericCircuit, StepCircuit},
+            circuit::{StepCircuit, TrivialCircuit},
             evaluation::EvaluationEngineTrait,
             Engine,
         },
     };
-    use pasta_curves::{Fp, Fq};
     use std::{boxed::Box, format, fs, vec::Vec};
 
-    type EE<E> = no_std_nova_snark::provider::ipa_pc::EvaluationEngine<E>;
+    type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
     #[test]
     fn test_success() -> Result<(), Box<dyn std::error::Error>> {
-        test_full("cubic")?;
-        // test_full("quadratic")?;
+        test_full("latest")?;
+        test_full("latest")?;
         Ok(())
     }
 
     #[test]
     fn test_bad_pubs_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-        test_pubs_deserialization_fails("cubic")?;
-        // test_pubs_deserialization_fails("quadratic")?;
+        test_pubs_deserialization_fails("latest")?;
+        Ok(())
+    }
+
+    fn test_pubs_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let bin_path_pubs = format!("./resources/{}/pubs.bin", &path);
+        let mut bytes_from_file_pubs = fs::read(bin_path_pubs)?;
+        bytes_from_file_pubs[0] += 11;
+        let result = deserializer::deserialize_pubs(&bytes_from_file_pubs);
+        assert!(matches!(result, Err(DeserializeError::InvalidPubs)));
         Ok(())
     }
 
     #[test]
     fn test_bad_proof_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-        test_proof_deserialization_fails("cubic")?;
-        // test_proof_deserialization_fails("quadratic")?;
+        test_proof_deserialization_fails("latest")?;
         Ok(())
     }
 
@@ -56,15 +65,6 @@ mod tests {
         Ok(())
     }
 
-    fn test_pubs_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let bin_path_pubs = format!("./resources/{}/pubs.bin", &path);
-        let mut bytes_from_file_pubs = fs::read(bin_path_pubs)?;
-        bytes_from_file_pubs[0] += 11;
-        let result = deserializer::deserialize_pubs(&bytes_from_file_pubs);
-        assert!(matches!(result, Err(DeserializeError::InvalidPubs)));
-        Ok(())
-    }
-
     fn test_full(path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let vk_bytes;
         let snark_bytes;
@@ -76,16 +76,17 @@ mod tests {
                 vk_bytes = handle_vk::<
                     PallasEngine,
                     VestaEngine,
-                    GenericCircuit<Fq>,
-                    GenericCircuit<Fp>,
+                    TrivialCircuit<PallasScalar>,
+                    TrivialCircuit<VestaScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
+
                 snark_bytes = handle_compressed_snark::<
                     PallasEngine,
                     VestaEngine,
-                    GenericCircuit<Fq>,
-                    GenericCircuit<Fp>,
+                    TrivialCircuit<PallasScalar>,
+                    TrivialCircuit<VestaScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
@@ -94,16 +95,16 @@ mod tests {
                 vk_bytes = handle_vk::<
                     VestaEngine,
                     PallasEngine,
-                    GenericCircuit<Fp>,
-                    GenericCircuit<Fq>,
+                    TrivialCircuit<VestaScalar>,
+                    TrivialCircuit<PallasScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
                 snark_bytes = handle_compressed_snark::<
                     VestaEngine,
                     PallasEngine,
-                    GenericCircuit<Fp>,
-                    GenericCircuit<Fq>,
+                    TrivialCircuit<VestaScalar>,
+                    TrivialCircuit<PallasScalar>,
                     EE<_>,
                     EE<_>,
                 >(&path)?;
