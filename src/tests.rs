@@ -25,14 +25,14 @@ mod tests {
 
     #[test]
     fn test_success() -> Result<(), Box<dyn std::error::Error>> {
-        test_full("new")?;
-        test_full("new")?;
+        test_full("latest")?;
+        test_full("latest")?;
         Ok(())
     }
 
     #[test]
     fn test_bad_pubs_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-        test_pubs_deserialization_fails("new")?;
+        test_pubs_deserialization_fails("latest")?;
         Ok(())
     }
 
@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn test_bad_proof_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-        test_proof_deserialization_fails("new")?;
+        test_proof_deserialization_fails("latest")?;
         Ok(())
     }
 
