@@ -102,7 +102,7 @@ lazy_static! {
             .iter()
             .filter_map(|hex| {
                 let bytes: [u8; 32] = hex::decode(hex).ok()?.try_into().ok()?;
-                PallasAffine::from_bytes(&bytes.try_into().ok()?).into()
+                PallasAffine::from_bytes(&bytes.into()).into()
             })
             .collect()
     };
@@ -111,7 +111,7 @@ lazy_static! {
             .iter()
             .filter_map(|hex| {
                 let bytes: [u8; 32] = hex::decode(hex).ok()?.try_into().ok()?;
-                VestaAffine::from_bytes(&bytes.try_into().ok()?).into()
+                VestaAffine::from_bytes(&bytes.into()).into()
             })
             .collect()
     };

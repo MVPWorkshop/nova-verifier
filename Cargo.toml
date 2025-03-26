@@ -18,7 +18,6 @@ nova-snark = { git = "https://github.com/MVPWorkshop/Nova", branch = "public_fie
 ff = { version = "0.13.0", default-features = false }
 postcard = { version = "1.1.1", default-features = false, features = ["alloc"] }
 thiserror = { version = "2.0.9", default-features = false }
-# pasta_curves = { version = "0.5.1", default-features = false }
 serde = { version = "1.0.0", default-features = false }
 halo2curves = { git = "https://github.com/milosdjurica/halo2curves", branch = "no_std", features = [
     "bits",
