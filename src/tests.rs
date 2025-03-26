@@ -25,39 +25,16 @@ mod tests {
 
     #[test]
     fn test_success() -> Result<(), Box<dyn std::error::Error>> {
-        test_full("check")?;
-        test_full("check")?;
-        // test_full("quadratic")?;
+        test_full("new")?;
+        test_full("new")?;
         Ok(())
     }
 
     #[test]
     fn test_bad_pubs_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-        test_pubs_deserialization_fails("check")?;
-        // test_pubs_deserialization_fails("quadratic")?;
+        test_pubs_deserialization_fails("new")?;
         Ok(())
     }
-
-    // #[test]
-    // fn test_bad_proof_deserialization() -> Result<(), Box<dyn std::error::Error>> {
-    //     test_proof_deserialization_fails("check")?;
-    //     // test_proof_deserialization_fails("quadratic")?;
-    //     Ok(())
-    // }
-
-    // fn test_proof_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    //     let bin_path_compressed_snark = format!("./resources/{}/compressed_snark.bin", &path);
-    //     let mut bytes_from_file_compressed_snark = fs::read(bin_path_compressed_snark)?;
-
-    //     bytes_from_file_compressed_snark[11] = 11;
-
-    //     let result =
-    //         deserializer::deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
-    //             &bytes_from_file_compressed_snark,
-    //         );
-    //     assert!(matches!(result, Err(DeserializeError::InvalidProof)));
-    //     Ok(())
-    // }
 
     fn test_pubs_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let bin_path_pubs = format!("./resources/{}/pubs.bin", &path);
@@ -65,6 +42,26 @@ mod tests {
         bytes_from_file_pubs[0] += 11;
         let result = deserializer::deserialize_pubs(&bytes_from_file_pubs);
         assert!(matches!(result, Err(DeserializeError::InvalidPubs)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_bad_proof_deserialization() -> Result<(), Box<dyn std::error::Error>> {
+        test_proof_deserialization_fails("new")?;
+        Ok(())
+    }
+
+    fn test_proof_deserialization_fails(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let bin_path_compressed_snark = format!("./resources/{}/compressed_snark.bin", &path);
+        let mut bytes_from_file_compressed_snark = fs::read(bin_path_compressed_snark)?;
+
+        bytes_from_file_compressed_snark[11] = 11;
+
+        let result =
+            deserializer::deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
+                &bytes_from_file_compressed_snark,
+            );
+        assert!(matches!(result, Err(DeserializeError::InvalidProof)));
         Ok(())
     }
 

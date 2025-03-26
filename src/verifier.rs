@@ -9,10 +9,14 @@ use crate::{
 };
 use alloc::vec::Vec;
 use ff::Field;
+use halo2curves::group::GroupEncoding;
 use lazy_static::lazy_static;
 use nova_snark::{
     provider::{
-        pasta::{pallas::Scalar as PallasScalar, vesta::Scalar as VestaScalar},
+        pasta::{
+            pallas::{Affine as PallasAffine, Scalar as PallasScalar},
+            vesta::{Affine as VestaAffine, Scalar as VestaScalar},
+        },
         PallasEngine, VestaEngine,
     },
     traits::Engine,
@@ -21,15 +25,15 @@ use nova_snark::{
 type EE<E> = nova_snark::provider::ipa_pc::EvaluationEngine<E>;
 
 pub fn verify_nova(
-    vk_bytes: &Vec<u8>,
-    snark_bytes: &Vec<u8>,
-    pubs_bytes: &Vec<u8>,
+    vk_bytes: &[u8],
+    snark_bytes: &[u8],
+    pubs_bytes: &[u8],
 ) -> Result<(), NovaVerifierError> {
     let Pubs {
         first_curve,
         num_of_steps,
         z0_primary,
-    } = deserialize_pubs(&pubs_bytes)?;
+    } = deserialize_pubs(pubs_bytes)?;
 
     match first_curve {
         CurveName::Pallas => verify_compressed_snark_pallas_vesta(
@@ -50,8 +54,8 @@ use std::eprintln;
 use std::time::Instant;
 
 pub fn verify_compressed_snark_pallas_vesta(
-    vk_bytes: &Vec<u8>,
-    compressed_snark_bytes: &Vec<u8>,
+    vk_bytes: &[u8],
+    compressed_snark_bytes: &[u8],
     num_of_steps: usize,
     z0_primary: PallasScalar,
 ) -> Result<(), NovaVerifierError> {
@@ -59,20 +63,20 @@ pub fn verify_compressed_snark_pallas_vesta(
 
     let start_deserialize_snark = Instant::now();
     let compressed_snark = deserialize_compressed_snark::<PallasEngine, VestaEngine, EE<_>, EE<_>>(
-        &compressed_snark_bytes,
+        compressed_snark_bytes,
     )?;
     let duration_deserialize_snark = start_deserialize_snark.elapsed();
 
     let start_deserialize_vk = Instant::now();
-    let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(&vk_bytes)?;
+    let mut vk = deserialize_vk::<PallasEngine, VestaEngine, EE<_>, EE<_>>(vk_bytes)?;
     let duration_deserialize_vk = start_deserialize_vk.elapsed();
 
     let start_ck_primary = Instant::now();
-    // vk.vk_primary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+    vk.vk_primary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
     let duration_ck_primary = start_ck_primary.elapsed();
 
     let start_ck_secondary = Instant::now();
-    // vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
+    vk.vk_secondary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
     let duration_ck_secondary = start_ck_secondary.elapsed();
 
     let start_verify = Instant::now();
@@ -95,24 +99,24 @@ pub fn verify_compressed_snark_pallas_vesta(
 }
 
 pub fn verify_compressed_snark_vesta_pallas(
-    vk_bytes: &Vec<u8>,
-    compressed_snark_bytes: &Vec<u8>,
+    vk_bytes: &[u8],
+    compressed_snark_bytes: &[u8],
     num_of_steps: usize,
     z0_primary: VestaScalar,
 ) -> Result<(), NovaVerifierError>
 where
 {
     let compressed_snark = deserialize_compressed_snark::<VestaEngine, PallasEngine, EE<_>, EE<_>>(
-        &compressed_snark_bytes,
+        compressed_snark_bytes,
     )?;
 
-    let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(&vk_bytes)?;
+    let mut vk = deserialize_vk::<VestaEngine, PallasEngine, EE<_>, EE<_>>(vk_bytes)?;
 
-    // vk.vk_primary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
+    vk.vk_primary.vk_ee.ck_v.ck = CK_SECONDARY_PARSED.to_vec();
 
-    // vk.vk_secondary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
+    vk.vk_secondary.vk_ee.ck_v.ck = CK_PRIMARY_PARSED.to_vec();
 
-    compressed_snark.verify(&mut vk, num_of_steps, &[z0_primary])?;
+    compressed_snark.verify(&vk, num_of_steps, &[z0_primary])?;
     Ok(())
 }
 
@@ -123,23 +127,23 @@ fn get_z0<E: Engine>(z0: Z0Values) -> E::Scalar {
     }
 }
 
-// lazy_static! {
-//     pub static ref CK_PRIMARY_PARSED: Vec<EpAffine> = {
-//         CK_PRIMARY
-//             .iter()
-//             .filter_map(|hex| {
-//                 let bytes = hex::decode(hex).ok()?;
-//                 EpAffine::from_bytes(&bytes.try_into().ok()?).into()
-//             })
-//             .collect()
-//     };
-//     pub static ref CK_SECONDARY_PARSED: Vec<EqAffine> = {
-//         CK_SECONDARY
-//             .iter()
-//             .filter_map(|hex| {
-//                 let bytes = hex::decode(hex).ok()?;
-//                 EqAffine::from_bytes(&bytes.try_into().ok()?).into()
-//             })
-//             .collect()
-//     };
-// }
+lazy_static! {
+    pub static ref CK_PRIMARY_PARSED: Vec<PallasAffine> = {
+        CK_PRIMARY
+            .iter()
+            .filter_map(|hex| {
+                let bytes: [u8; 32] = hex::decode(hex).ok()?.try_into().ok()?;
+                PallasAffine::from_bytes(&bytes.try_into().ok()?).into()
+            })
+            .collect()
+    };
+    pub static ref CK_SECONDARY_PARSED: Vec<VestaAffine> = {
+        CK_SECONDARY
+            .iter()
+            .filter_map(|hex| {
+                let bytes: [u8; 32] = hex::decode(hex).ok()?.try_into().ok()?;
+                VestaAffine::from_bytes(&bytes.try_into().ok()?).into()
+            })
+            .collect()
+    };
+}
